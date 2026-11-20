@@ -1,0 +1,250 @@
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+  .navigation {
+    gap: 12px;
+  }
+
+  .navigation button {
+    font-size: 11px;
+  }
+
+  .cars-grid,
+  .my-cars-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-layout {
+    grid-template-columns: minmax(0, 1.3fr) minmax(250px, .8fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .header-content {
+    flex-direction: column;
+    padding-top: 15px;
+    padding-bottom: 15px;
+  }
+
+  .navigation {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-sidebar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 15px;
+  }
+
+  .detail-sidebar .detail-panel,
+  .detail-sidebar .seller-card {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .container {
+    width: min(100% - 28px, 1200px);
+  }
+
+  .hero {
+    min-height: 470px;
+  }
+
+  .hero h1 {
+    font-size: 65px;
+  }
+
+  .cars-section {
+    padding: 60px 0;
+  }
+
+  .filter-area {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .category-buttons {
+    justify-content: center;
+  }
+
+  .detail-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .detail-heading h1 {
+    font-size: 36px;
+  }
+
+  .detail-price {
+    font-size: 27px;
+  }
+
+  .detail-main-image-wrap {
+    height: 340px;
+  }
+
+  .detail-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .my-cars-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 600px) {
+  .cars-grid,
+  .my-cars-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .car-image {
+    height: 230px;
+  }
+
+  .section-heading h2,
+  .about-section h2 {
+    font-size: 39px;
+  }
+
+  .listing-modal {
+    padding: 25px 18px;
+  }
+
+  .listing-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .listing-field.full-width {
+    grid-column: auto;
+  }
+
+  .listing-step strong {
+    font-size: 9px;
+  }
+
+  .listing-step small {
+    font-size: 8px;
+  }
+
+  .listing-preview-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .auth-modal {
+    padding: 30px 22px;
+  }
+
+  .image-lightbox {
+    padding: 60px 15px;
+  }
+
+  .lightbox-image {
+    max-width: 100%;
+    max-height: calc(100vh - 130px);
+  }
+
+  .lightbox-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 25px;
+  }
+
+  .lightbox-arrow-left {
+    left: 8px;
+  }
+
+  .lightbox-arrow-right {
+    right: 8px;
+  }
+
+  .lightbox-close {
+    top: 12px;
+    right: 12px;
+  }
+
+  .gallery-arrow {
+    width: 36px;
+    height: 36px;
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navigation {
+    gap: 9px;
+  }
+
+  .navigation button {
+    font-size: 10px;
+  }
+
+  .navigation .auth-nav-button {
+    padding: 9px 11px;
+  }
+
+  .hero h1 {
+    font-size: 53px;
+  }
+
+  .detail-main-image-wrap {
+    height: 250px;
+  }
+
+  .detail-panel,
+  .seller-card {
+    padding: 18px;
+  }
+
+  .listing-actions {
+    flex-direction: column;
+  }
+
+  .listing-actions button {
+    width: 100%;
+  }
+
+  .upload-stats {
+    flex-direction: column;
+  }
+
+  .phone-input-group {
+    grid-template-columns: 85px 1fr;
+  }
+}
+
+@media (max-width: 380px) {
+  .container {
+    width: calc(100% - 22px);
+  }
+
+  .hero h1 {
+    font-size: 46px;
+  }
+
+  .detail-main-image-wrap {
+    height: 210px;
+  }
+
+  .detail-thumbnails button {
+    flex-basis: 72px;
+    height: 58px;
+  }
+
+  .listing-modal {
+    padding: 22px 14px;
+  }
+  }

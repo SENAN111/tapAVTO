@@ -1,0 +1,65 @@
+/* HEADER */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--dark);
+  color: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .12);
+}
+
+.header-content {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+}
+
+.logo {
+  border: 0;
+  background: transparent;
+  color: white;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.logo span {
+  color: var(--red);
+}
+
+.navigation {
+  display: flex;
+  align-items: center;
+  gap: 23px;
+}
+
+.navigation button {
+  border: 0;
+  background: transparent;
+  color: #ddd;
+  font-size: 13px;
+  font-weight: 600;
+  transition: color .2s;
+}
+
+.navigation button:hover {
+  color: white;
+}
+
+.navigation .auth-nav-button {
+  padding: 11px 17px;
+  border: 1px solid #555;
+  border-radius: 5px;
+}
+
+.navigation .add-car-button,
+.navigation .register-nav-button {
+  border-color: var(--red);
+  background: var(--red);
+  color: white;
+}

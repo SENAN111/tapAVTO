@@ -1,0 +1,82 @@
+
+export const API_URL = "http://localhost:8080/api/cars";
+export const AUTH_URL = "http://localhost:8080/api/auth";
+
+export const carModels = {
+  BMW: ["1 Series", "2 Series", "3 Series", "4 Series", "5 Series", "6 Series", "7 Series", "8 Series", "X1", "X2", "X3", "X4", "X5", "X6", "X7", "XM", "Z4", "M2", "M3", "M4", "M5"],
+  "Mercedes-Benz": ["A-Class", "B-Class", "C-Class", "E-Class", "S-Class", "CLA", "CLS", "GLA", "GLB", "GLC", "GLE", "GLS", "G-Class", "AMG GT", "EQS"],
+  Audi: ["A1", "A3", "A4", "A5", "A6", "A7", "A8", "Q2", "Q3", "Q5", "Q7", "Q8", "e-tron", "RS6"],
+  Volkswagen: ["Golf", "Passat", "Jetta", "Tiguan", "Touareg", "Polo", "Arteon", "T-Roc", "ID.4"],
+  Toyota: ["Corolla", "Camry", "Prius", "Land Cruiser", "Prado", "RAV4", "Highlander", "Yaris", "Avalon", "C-HR", "Hilux", "Supra"],
+  Lexus: ["ES", "IS", "GS", "LS", "NX", "RX", "GX", "LX", "UX", "LC"],
+  Honda: ["Civic", "Accord", "CR-V", "HR-V", "Pilot", "Jazz", "City", "Odyssey"],
+  Hyundai: ["Accent", "Elantra", "Sonata", "Tucson", "Santa Fe", "Kona", "Palisade", "i10", "i20", "i30"],
+  Kia: ["Rio", "Cerato", "K5", "Optima", "Sportage", "Sorento", "Seltos", "Picanto", "Stinger", "Telluride"],
+  Nissan: ["Altima", "Maxima", "Sentra", "Sunny", "Qashqai", "X-Trail", "Patrol", "Juke", "Murano", "Navara"],
+  Mazda: ["Mazda 2", "Mazda 3", "Mazda 6", "CX-3", "CX-5", "CX-9", "CX-30", "MX-5"],
+  Mitsubishi: ["Lancer", "Outlander", "Pajero", "ASX", "Eclipse Cross", "L200"],
+  Subaru: ["Impreza", "Legacy", "Forester", "Outback", "XV", "WRX"],
+  Ford: ["Focus", "Fiesta", "Mondeo", "Fusion", "Mustang", "Explorer", "Escape", "Kuga", "Ranger", "F-150"],
+  Chevrolet: ["Cruze", "Malibu", "Camaro", "Equinox", "Captiva", "Tahoe", "Traverse", "Spark"],
+  Opel: ["Astra", "Corsa", "Insignia", "Vectra", "Mokka", "Zafira", "Grandland"],
+  Renault: ["Megane", "Logan", "Clio", "Duster", "Captur", "Koleos", "Arkana"],
+  Peugeot: ["208", "308", "408", "508", "2008", "3008", "5008"],
+  Porsche: ["911", "Cayenne", "Macan", "Panamera", "Taycan", "718 Cayman", "718 Boxster"],
+  Volvo: ["S60", "S90", "V60", "V90", "XC40", "XC60", "XC90"],
+  Tesla: ["Model S", "Model 3", "Model X", "Model Y", "Cybertruck"],
+  Skoda: ["Octavia", "Superb", "Fabia", "Kodiaq", "Karoq", "Kamiq"],
+  Suzuki: ["Swift", "Vitara", "Jimny", "SX4", "Baleno", "S-Cross"],
+  Land_Rover: ["Range Rover", "Range Rover Sport", "Range Rover Evoque", "Discovery", "Defender", "Discovery Sport"],
+  Jeep: ["Wrangler", "Grand Cherokee", "Cherokee", "Compass", "Renegade"],
+  Ferrari: ["488", "F8 Tributo", "296 GTB", "812 Superfast", "Roma", "SF90"],
+  Lamborghini: ["Huracan", "Aventador", "Urus", "Revuelto"],
+  Bentley: ["Continental GT", "Flying Spur", "Bentayga"],
+  "Rolls-Royce": ["Ghost", "Phantom", "Cullinan", "Wraith"],
+};
+
+export const brands = Object.keys(carModels).sort((a, b) =>
+  a.localeCompare(b)
+);
+
+export const carColors = [
+  "Ağ", "Qara", "Boz", "Gümüşü", "Qırmızı", "Göy",
+  "Tünd göy", "Yaşıl", "Sarı", "Narıncı", "Qəhvəyi",
+  "Bej", "Bənövşəyi", "Digər",
+];
+
+export const bodyTypes = [
+  { value: "SEDAN", label: "Sedan" },
+  { value: "SUV", label: "SUV / Crossover" },
+  { value: "HATCHBACK", label: "Hetçbek" },
+  { value: "WAGON", label: "Universal" },
+  { value: "COUPE", label: "Kupe" },
+  { value: "CONVERTIBLE", label: "Kabriolet" },
+  { value: "MINIVAN", label: "Minivan" },
+  { value: "PICKUP", label: "Pikap" },
+  { value: "OTHER", label: "Digər" },
+];
+
+export const phonePrefixes = [
+  { value: "+99410", label: "010" },
+  { value: "+99450", label: "050" },
+  { value: "+99451", label: "051" },
+  { value: "+99455", label: "055" },
+  { value: "+99460", label: "060" },
+  { value: "+99470", label: "070" },
+  { value: "+99477", label: "077" },
+  { value: "+99499", label: "099" },
+];
+
+export const emptyCarForm = {
+  brand: "",
+  model: "",
+  year: "",
+  price: "",
+  mileage: "",
+  fuelType: "PETROL",
+  transmission: "AUTOMATIC",
+  bodyType: "",
+  color: "",
+  description: "",
+  contactPhone: "",
+};
