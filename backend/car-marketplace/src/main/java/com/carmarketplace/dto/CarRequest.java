@@ -48,6 +48,22 @@ public class CarRequest {
     @PositiveOrZero(message = "Yürüş mənfi ola bilməz")
     private Long mileage;
 
+    // Mühərrikin həcmi (L)
+    @NotNull(message = "Mühərrikin həcmi qeyd edilməlidir")
+    @DecimalMin(value = "0.1", message = "Mühərrikin həcmi ən azı 0.1 L olmalıdır")
+    @Digits(
+            integer = 2,
+            fraction = 1,
+            message = "Mühərrikin həcmi bir onluq rəqəmlə qeyd edilməlidir"
+    )
+    private BigDecimal engineVolume;
+
+    // Mühərrik gücü (at gücü)
+    @NotNull(message = "Mühərrik gücü qeyd edilməlidir")
+    @Min(value = 1, message = "Mühərrik gücü ən azı 1 a.g. olmalıdır")
+    @Max(value = 2000, message = "Mühərrik gücü maksimum 2000 a.g. ola bilər")
+    private Integer horsePower;
+
     @NotNull(message = "Yanacaq növü seçilməlidir")
     private FuelType fuelType;
 
@@ -60,6 +76,11 @@ public class CarRequest {
     @NotBlank(message = "Rəng qeyd edilməlidir")
     @Size(max = 50, message = "Rəng maksimum 50 simvol ola bilər")
     private String color;
+
+    // Avtomobilin yerləşdiyi yer
+    @NotBlank(message = "Avtomobilin yerləşdiyi yer qeyd edilməlidir")
+    @Size(max = 150, message = "Yerləşmə maksimum 150 simvol ola bilər")
+    private String location;
 
     @Size(max = 2000, message = "Açıqlama maksimum 2000 simvol ola bilər")
     private String description;

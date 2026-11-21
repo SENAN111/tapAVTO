@@ -8,8 +8,10 @@ import com.carmarketplace.entity.enums.Transmission;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,6 +39,14 @@ public class Car {
 
     private Long mileage;
 
+    // Mühərrikin həcmi (L)
+    @Column(name = "engine_volume", precision = 4, scale = 1)
+    private BigDecimal engineVolume;
+
+    // Mühərrik gücü (at gücü)
+    @Column(name = "horse_power")
+    private Integer horsePower;
+
     @Enumerated(EnumType.STRING)
     private FuelType fuelType;
 
@@ -55,6 +65,15 @@ public class Car {
 
     @Column(name = "contact_phone", length = 20)
     private String contactPhone;
+
+    // Avtomobilin yerləşdiyi yer
+    @Column(length = 150)
+    private String location;
+
+    // Elanın yaradılma tarixi avtomatik təyin edilir
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)

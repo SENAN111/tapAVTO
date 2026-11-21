@@ -19,11 +19,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class CarService {
 
@@ -145,12 +147,11 @@ public class CarService {
 
     // Avtomobili silmək
     public void deleteCar(Long id) {
-
         Car car = findCarById(id);
-
         checkOwnershipOrAdmin(car);
 
-        carRepository.delete(car);
+        car.setStatus(CarStatus.DELETED);
+        carRepository.save(car);
     }
 
     // Avtomobili yeniləmək
@@ -165,6 +166,11 @@ public class CarService {
         existingCar.setYear(request.getYear());
         existingCar.setPrice(request.getPrice());
         existingCar.setMileage(request.getMileage());
+
+        existingCar.setEngineVolume(request.getEngineVolume());
+        existingCar.setHorsePower(request.getHorsePower());
+        existingCar.setLocation(request.getLocation());
+
         existingCar.setFuelType(request.getFuelType());
         existingCar.setTransmission(request.getTransmission());
         existingCar.setBodyType(request.getBodyType());
@@ -219,6 +225,11 @@ public class CarService {
         car.setYear(request.getYear());
         car.setPrice(request.getPrice());
         car.setMileage(request.getMileage());
+
+        car.setEngineVolume(request.getEngineVolume());
+        car.setHorsePower(request.getHorsePower());
+        car.setLocation(request.getLocation());
+
         car.setFuelType(request.getFuelType());
         car.setTransmission(request.getTransmission());
         car.setBodyType(request.getBodyType());
@@ -240,12 +251,27 @@ public class CarService {
         response.setYear(car.getYear());
         response.setPrice(car.getPrice());
         response.setMileage(car.getMileage());
+
+        response.setEngineVolume(car.getEngineVolume());
+        response.setHorsePower(car.getHorsePower());
+        response.setLocation(car.getLocation());
+        response.setCreatedAt(car.getCreatedAt());
+
         response.setFuelType(car.getFuelType());
         response.setTransmission(car.getTransmission());
         response.setBodyType(car.getBodyType());
         response.setColor(car.getColor());
         response.setDescription(car.getDescription());
         response.setContactPhone(car.getContactPhone());
+
+        response.setStatus(car.getStatus());
+
+        response.setImageUrls(
+                car.getImages()
+                        .stream()
+                        .map(image -> image.getImageUrl())
+                        .toList()
+        );
 
         if (car.getOwner() != null) {
             response.setOwnerName(

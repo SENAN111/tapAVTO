@@ -18,6 +18,18 @@ function useAuth() {
     password: "",
     role: "USER",
   });
+  function openAuth(mode) {
+    setAuthForm({
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      role: "USER",
+    });
+
+    setAuthError("");
+    setAuthMode(mode);
+  }
 
   function handleAuthChange(event) {
     const { name, value } = event.target;
@@ -110,6 +122,7 @@ function useAuth() {
     handleAuthChange,
     handleAuthSubmit,
     logout,
+    openAuth,
   };
 }
 

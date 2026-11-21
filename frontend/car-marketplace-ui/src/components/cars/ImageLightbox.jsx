@@ -1,3 +1,6 @@
+
+import { formatPrice } from "../../utils/carUtils";
+
 function ImageLightbox({
   selectedImages,
   activeImage,
@@ -38,12 +41,33 @@ function ImageLightbox({
         </button>
       )}
 
-      <img
-        className="lightbox-image"
-        src={selectedImages[activeImage]?.imageUrl}
-        alt={`${selectedCar?.brand || ""} ${selectedCar?.model || ""}`}
+      <div
+        className="lightbox-content"
         onClick={(event) => event.stopPropagation()}
-      />
+      >
+        <img
+          className="lightbox-image"
+          src={selectedImages[activeImage]?.imageUrl}
+          alt={`${selectedCar?.brand || ""} ${selectedCar?.model || ""}`}
+        />
+
+        {/* Avtomobil məlumatları bütün şəkillərdə görünür */}
+        {selectedCar && (
+          <div className="lightbox-car-info">
+            <div className="lightbox-car-title">
+              {selectedCar.brand} {selectedCar.model}
+            </div>
+
+            <div className="lightbox-car-details">
+              <span>{selectedCar.year}</span>
+              <span className="lightbox-divider">|</span>
+              <span>{formatPrice(selectedCar.mileage)} km</span>
+              <span className="lightbox-divider">|</span>
+              <strong>{formatPrice(selectedCar.price)} AZN</strong>
+            </div>
+          </div>
+        )}
+      </div>
 
       {selectedImages.length > 1 && (
         <button

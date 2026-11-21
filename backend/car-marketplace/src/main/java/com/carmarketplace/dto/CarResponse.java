@@ -2,12 +2,15 @@
 package com.carmarketplace.dto;
 
 import com.carmarketplace.entity.enums.BodyType;
+import com.carmarketplace.entity.enums.CarStatus;
 import com.carmarketplace.entity.enums.FuelType;
 import com.carmarketplace.entity.enums.Transmission;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -19,6 +22,13 @@ public class CarResponse {
     private Integer year;
     private BigDecimal price;
     private Long mileage;
+
+    // Mühərrik gücü (at gücü)
+    private Integer horsePower;
+
+    // Mühərrikin həcmi (L)
+    private BigDecimal engineVolume;
+
     private FuelType fuelType;
     private Transmission transmission;
     private BodyType bodyType;
@@ -26,4 +36,13 @@ public class CarResponse {
     private String description;
     private String ownerName;
     private String contactPhone;
+
+    // Avtomobilin yerləşdiyi yer
+    private String location;
+
+    // Elanın yaradılma tarixi
+    private LocalDateTime createdAt;
+
+    private CarStatus status;
+    private List<String> imageUrls;
 }

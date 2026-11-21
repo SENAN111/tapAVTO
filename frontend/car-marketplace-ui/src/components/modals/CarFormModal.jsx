@@ -1,4 +1,4 @@
-
+import { cities } from "../../data/carData";
 function CarFormModal({
   showCarForm,
   closeCarForm,
@@ -222,20 +222,51 @@ function CarFormModal({
             </div>
 
             <div className="listing-field">
-              <label>Yanacaq növü</label>
-              <select
-                name="fuelType"
-                value={carForm.fuelType}
+              <label>Mühərrikin gücü (at gücü)</label>
+              <input
+                name="horsePower"
+                type="number"
+                placeholder="Məsələn: 170"
+                min="1"
+                max="2000"
+                step="1"
+                value={carForm.horsePower}
                 onChange={handleCarChange}
                 required
-              >
-                <option value="PETROL">Benzin</option>
-                <option value="DIESEL">Dizel</option>
-                <option value="HYBRID">Hibrid</option>
-                <option value="ELECTRIC">Elektrik</option>
-                <option value="GAS">Qaz</option>
-              </select>
+              />
             </div>
+
+            <div className="listing-field">
+              <label>Mühərrikin həcmi (L)</label>
+              <input
+                name="engineVolume"
+                type="number"
+                placeholder="Məsələn: 2.0"
+                min="0.1"
+                max="99.9"
+                step="0.1"
+                value={carForm.engineVolume}
+                onChange={handleCarChange}
+                required
+              />
+            </div>
+
+           <div className="listing-field">
+             <label>Yanacaq növü</label>
+             <select
+               name="fuelType"
+               value={carForm.fuelType}
+               onChange={handleCarChange}
+               required
+             >
+               <option value="PETROL">Benzin</option>
+               <option value="DIESEL">Dizel</option>
+               <option value="HYBRID">Hibrid</option>
+               <option value="PLUG_IN_HYBRID">Plug-in Hibrid</option>
+               <option value="ELECTRIC">Elektrik</option>
+               <option value="LPG">Qaz (LPG)</option>
+             </select>
+           </div>
 
             <div className="listing-field">
               <label>Sürətlər qutusu</label>
@@ -247,6 +278,8 @@ function CarFormModal({
               >
                 <option value="AUTOMATIC">Avtomat</option>
                 <option value="MANUAL">Mexaniki</option>
+                <option value="ROBOT">Robot</option>
+                <option value="CVT">Variator (CVT)</option>
               </select>
             </div>
 
@@ -297,6 +330,23 @@ function CarFormModal({
                 />
               </div>
             )}
+
+           <div className="listing-field full-width">
+             <label>Şəhər</label>
+             <select
+               name="location"
+               value={carForm.location}
+               onChange={handleCarChange}
+               required
+             >
+               <option value="">Şəhər seçin</option>
+               {cities.map((city) => (
+                 <option key={city} value={city}>
+                   {city}
+                 </option>
+               ))}
+             </select>
+           </div>
 
             <div className="listing-field full-width">
               <label>Avtomobil haqqında məlumat</label>

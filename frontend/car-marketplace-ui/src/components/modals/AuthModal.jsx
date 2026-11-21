@@ -8,18 +8,24 @@ function AuthModal({
   authError,
   setAuthError,
   authLoading,
+  openAuth,
 }) {
   if (!authMode) return null;
 
   return (
     <div
       className="auth-backdrop"
-      onClick={() => setAuthMode(null)}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          setAuthMode(null);
+        }
+      }}
     >
       <form
         className="auth-modal"
         onSubmit={handleAuthSubmit}
         onClick={(event) => event.stopPropagation()}
+        autoComplete="off"
       >
         <button
           type="button"
@@ -43,6 +49,7 @@ function AuthModal({
               placeholder="Ad"
               value={authForm.firstName}
               onChange={handleAuthChange}
+              autoComplete="off"
               required
             />
 
@@ -51,6 +58,7 @@ function AuthModal({
               placeholder="Soyad"
               value={authForm.lastName}
               onChange={handleAuthChange}
+              autoComplete="off"
               required
             />
           </>
@@ -62,6 +70,9 @@ function AuthModal({
           placeholder="Email"
           value={authForm.email}
           onChange={handleAuthChange}
+          autoComplete={
+            authMode === "register" ? "off" : "username"
+          }
           required
         />
 
@@ -71,6 +82,11 @@ function AuthModal({
           placeholder="Şifrə"
           value={authForm.password}
           onChange={handleAuthChange}
+          autoComplete={
+            authMode === "register"
+              ? "new-password"
+              : "current-password"
+          }
           minLength={authMode === "register" ? 8 : undefined}
           required
         />
@@ -111,9 +127,16 @@ function AuthModal({
             type="button"
             onClick={() => {
               setAuthError("");
-              setAuthMode(
-                authMode === "login" ? "register" : "login"
-              );
+
+              if (openAuth) {
+                openAuth(
+                  authMode === "login" ? "register" : "login"
+                );
+              } else {
+                setAuthMode(
+                  authMode === "login" ? "register" : "login"
+                );
+              }
             }}
           >
             {authMode === "login" ? "Qeydiyyat" : "Login"}

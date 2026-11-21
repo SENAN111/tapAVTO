@@ -9,7 +9,7 @@ import {
 
 function useCarForm({ token, setAuthError, setAuthMode }) {
   const [showCarForm, setShowCarForm] = useState(false);
-  const [carForm, setCarForm] = useState(emptyCarForm);
+  const [carForm, setCarForm] = useState({ ...emptyCarForm });
   const [editingCarId, setEditingCarId] = useState(null);
 
   const [brandChoice, setBrandChoice] = useState("");
@@ -22,7 +22,7 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
   const [carFormError, setCarFormError] = useState("");
 
   function resetCarForm() {
-    setCarForm(emptyCarForm);
+    setCarForm({ ...emptyCarForm });
     setBrandChoice("");
     setModelChoice("");
     setColorChoice("");
@@ -128,7 +128,10 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
       model: car.model || "",
       year: car.year || "",
       price: car.price || "",
-      mileage: car.mileage || "",
+      mileage: car.mileage ?? "",
+      horsePower: car.horsePower ?? "",
+      engineVolume: car.engineVolume ?? "",
+      location: car.location || "",
       fuelType: car.fuelType || "PETROL",
       transmission: car.transmission || "AUTOMATIC",
       bodyType: car.bodyType || "",
@@ -152,6 +155,7 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
 
     setEditingCarId(car.id);
     setShowCarForm(true);
+    setCarFormError("");
   }
 
   return {

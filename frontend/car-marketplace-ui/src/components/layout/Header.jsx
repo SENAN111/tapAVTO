@@ -1,13 +1,36 @@
 
+function getUserRoles(token) {
+  try {
+    const payload = token.split(".")[1];
+    const base64 = payload
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+
+    const decoded = atob(base64);
+    const data = JSON.parse(decoded);
+
+    return data.roles || [];
+  } catch (error) {
+    return [];
+  }
+}
+
 function Header({
   token,
   goHome,
   goMyCars,
+  goFavorites,
   openCarForm,
   logout,
-  setAuthError,
-  setAuthMode,
+  openAuth,
 }) {
+  const roles = getUserRoles(token);
+
+  const isSeller = roles.some(
+    (role) =>
+      role === "SELLER" || role === "ROLE_SELLER"
+  );
+
   return (
     <header className="header">
       <div className="container header-content">
@@ -47,7 +70,12 @@ function Header({
           >
             Haqqımızda
           </button>
-
+          <button
+             type="button"
+             onClick={goFavorites}
+          >
+              ♡ Favoritlərim
+            </button>
           <button
             type="button"
             onClick={() => {
@@ -64,21 +92,25 @@ function Header({
 
           {token ? (
             <>
-              <button
-                type="button"
-                className="auth-nav-button"
-                onClick={goMyCars}
-              >
-                Elanlarım
-              </button>
+              {isSeller && (
+                <>
+                  <button
+                    type="button"
+                    className="auth-nav-button"
+                    onClick={goMyCars}
+                  >
+                    Elanlarım
+                  </button>
 
-              <button
-                type="button"
-                className="auth-nav-button add-car-button"
-                onClick={openCarForm}
-              >
-                + Maşın əlavə et
-              </button>
+                  <button
+                    type="button"
+                    className="auth-nav-button add-car-button"
+                    onClick={openCarForm}
+                  >
+                    + Maşın əlavə et
+                  </button>
+                </>
+              )}
 
               <button
                 type="button"
@@ -93,10 +125,7 @@ function Header({
               <button
                 type="button"
                 className="auth-nav-button"
-                onClick={() => {
-                  setAuthError("");
-                  setAuthMode("login");
-                }}
+                onClick={() => openAuth("login")}
               >
                 Login
               </button>
@@ -104,10 +133,7 @@ function Header({
               <button
                 type="button"
                 className="auth-nav-button register-nav-button"
-                onClick={() => {
-                  setAuthError("");
-                  setAuthMode("register");
-                }}
+                onClick={() => openAuth("register")}
               >
                 Qeydiyyat
               </button>

@@ -6,6 +6,22 @@ import {
   getPrimaryImage,
 } from "../../utils/carUtils";
 
+function formatListingDate(value) {
+  if (!value) return "Tarix göstərilməyib";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Tarix göstərilməyib";
+  }
+
+  return date.toLocaleDateString("az-AZ", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
 function CarList({
   search,
   setSearch,
@@ -17,13 +33,18 @@ function CarList({
   filteredCars,
   carImages,
   openCarDetails,
+  favoriteIds,
+  toggleFavorite,
+  isFavorite,
 }) {
   return (
     <section className="cars-section" id="cars">
       <div className="container">
         <div className="section-heading">
           <p className="eyebrow">AVTOMOBİL KATALOQU</p>
-          <h2>Öz avtomobilini <span>tap</span></h2>
+          <h2>
+            Öz avtomobilini <span>tap</span>
+          </h2>
           <p>Seç, müqayisə et və sənə uyğun avtomobili tap.</p>
         </div>
 
@@ -93,6 +114,24 @@ function CarList({
                 }
               }}
             >
+              <button
+                type="button"
+                className={`favorite-button ${
+                  isFavorite(car.id) ? "active" : ""
+                }`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleFavorite(car.id);
+                }}
+                aria-label={
+                  isFavorite(car.id)
+                    ? "Favoritlərdən çıxar"
+                    : "Favoritlərə əlavə et"
+                }
+              >
+                {isFavorite(car.id) ? "♥" : "♡"}
+              </button>
+
               <div className="car-image">
                 {getPrimaryImage(car, carImages) ? (
                   <img
@@ -109,15 +148,42 @@ function CarList({
               </div>
 
               <div className="car-info">
-                <h3>{car.brand} {car.model}</h3>
+                <h3>
+                  {car.brand} {car.model}
+                </h3>
 
                 <p className="car-year">
-                  {car.year} · {getFuel(car.fuelType)}
+                  {car.year}
+                  {" · "}
+                  {car.engineVolume != null
+                    ? `${Number(car.engineVolume).toFixed(1)} L`
+                    : "Həcm göstərilməyib"}
+                  {" · "}
+                  {car.horsePower
+                    ? `${car.horsePower} a.g.`
+                    : "Güc göstərilməyib"}
+                  {" · "}
+                  {getFuel(car.fuelType)}
                 </p>
 
                 <div className="car-details">
-                  <span>◷ {formatPrice(car.mileage)} km</span>
-                  <span>{getTransmission(car.transmission)}</span>
+                  <span>
+                    ◷ {formatPrice(car.mileage)} km
+                  </span>
+                  <span>
+                    {getTransmission(car.transmission)}
+                  </span>
+                </div>
+
+                <div className="car-location">
+                  <span>⌖</span>
+                  <span>
+                    {car.location || "Yerləşmə göstərilməyib"}
+                  </span>
+                </div>
+
+                <div className="car-listing-date">
+                  Elan tarixi: {formatListingDate(car.createdAt)}
                 </div>
 
                 <div className="car-card-bottom">

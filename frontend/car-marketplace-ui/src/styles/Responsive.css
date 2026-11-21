@@ -1,3 +1,4 @@
+
 /* RESPONSIVE */
 
 @media (max-width: 1000px) {
@@ -103,6 +104,40 @@
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .detail-quick-info {
+    gap: 7px;
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .detail-image-overlay {
+    gap: 8px;
+    padding: 30px 12px 12px;
+  }
+
+  .detail-car-summary {
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .detail-favorite-button {
+    padding: 7px 9px;
+    font-size: 10px;
+  }
+
+  .lightbox-content {
+    gap: 12px;
+  }
+
+  .lightbox-image {
+    max-width: 100%;
+    max-height: calc(100vh - 210px);
+  }
+
+  .lightbox-car-info {
+    padding: 10px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -154,7 +189,7 @@
 
   .lightbox-image {
     max-width: 100%;
-    max-height: calc(100vh - 130px);
+    max-height: calc(100vh - 210px);
   }
 
   .lightbox-arrow {
@@ -180,6 +215,19 @@
     width: 36px;
     height: 36px;
     font-size: 22px;
+  }
+
+  .lightbox-car-title {
+    font-size: 15px;
+  }
+
+  .lightbox-car-details {
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .lightbox-car-details strong {
+    font-size: 13px;
   }
 }
 
@@ -224,6 +272,31 @@
   .phone-input-group {
     grid-template-columns: 85px 1fr;
   }
+
+  .detail-quick-info {
+    gap: 5px;
+    font-size: 11px;
+  }
+
+  .detail-quick-info strong {
+    font-size: 13px;
+  }
+
+  .detail-car-summary {
+    font-size: 10px;
+  }
+
+  .detail-favorite-button {
+    font-size: 9px;
+  }
+
+  .favorite-heart {
+    font-size: 16px;
+  }
+
+  .lightbox-image {
+    max-height: calc(100vh - 220px);
+  }
 }
 
 @media (max-width: 380px) {
@@ -247,4 +320,14 @@
   .listing-modal {
     padding: 22px 14px;
   }
+
+  .detail-quick-info {
+    gap: 4px;
+    font-size: 10px;
   }
+
+  .detail-car-summary {
+    gap: 4px;
+    font-size: 9px;
+  }
+}

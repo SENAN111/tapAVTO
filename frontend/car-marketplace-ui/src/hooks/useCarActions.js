@@ -53,11 +53,11 @@ function useCarActions({
         throw new Error("Buraxılış ilini düzgün daxil edin.");
       }
 
-      if (!carForm.brand.trim()) {
+      if (!carForm.brand?.trim()) {
         throw new Error("Avtomobil markasını daxil edin.");
       }
 
-      if (!carForm.model.trim()) {
+      if (!carForm.model?.trim()) {
         throw new Error("Avtomobil modelini daxil edin.");
       }
 
@@ -65,23 +65,71 @@ function useCarActions({
         throw new Error("Ban növünü seçin.");
       }
 
-      if (!carForm.color.trim()) {
+      if (!carForm.color?.trim()) {
         throw new Error("Avtomobilin rəngini seçin.");
       }
 
-      if (Number(carForm.price) <= 0) {
+      const price = Number(carForm.price);
+
+      if (!Number.isFinite(price) || price <= 0) {
         throw new Error("Qiymət 0-dan böyük olmalıdır.");
       }
 
-      if (Number(carForm.mileage) < 0) {
-        throw new Error("Yürüş mənfi ola bilməz.");
+      const mileage = Number(carForm.mileage);
+
+      if (!Number.isFinite(mileage) || mileage < 0) {
+        throw new Error("Yürüş düzgün daxil edilməlidir.");
+      }
+
+      const horsePower = Number(carForm.horsePower);
+
+      if (
+        !Number.isInteger(horsePower) ||
+        horsePower < 1 ||
+        horsePower > 2000
+      ) {
+        throw new Error(
+          "Mühərrikin gücünü 1-2000 a.g. aralığında daxil edin."
+        );
+      }
+
+      const engineVolume = Number(
+        String(carForm.engineVolume).replace(",", ".")
+      );
+
+      if (
+        !Number.isFinite(engineVolume) ||
+        engineVolume < 0.1 ||
+        engineVolume > 99.9 ||
+        !/^\d{1,2}([.,]\d)?$/.test(
+          String(carForm.engineVolume).trim()
+        )
+      ) {
+        throw new Error(
+          "Mühərrikin həcmini 0.1-99.9 L aralığında, məsələn 2.0 daxil edin."
+        );
+      }
+
+      const location = carForm.location?.trim();
+
+      if (!location) {
+        throw new Error("Şəhər və rayon məlumatını daxil edin.");
+      }
+
+      if (location.length > 150) {
+        throw new Error(
+          "Şəhər və rayon məlumatı maksimum 150 simvol ola bilər."
+        );
       }
 
       const payload = {
         ...carForm,
         year: Number(carForm.year),
-        price: Number(carForm.price),
-        mileage: Number(carForm.mileage),
+        price,
+        mileage,
+        horsePower,
+        engineVolume,
+        location,
         contactPhone: fullPhoneNumber,
       };
 
@@ -153,7 +201,9 @@ function useCarActions({
         const data = await response.json().catch(() => ({}));
 
         throw new Error(
-          data.message || data.error || "Elanı silmək mümkün olmadı."
+          data.message ||
+            data.error ||
+            "Elanı silmək mümkün olmadı."
         );
       }
 

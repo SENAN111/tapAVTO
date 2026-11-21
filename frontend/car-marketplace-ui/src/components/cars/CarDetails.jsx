@@ -16,6 +16,8 @@ function CarDetails({
   setShowLightbox,
   previousImage,
   nextImage,
+  toggleFavorite,
+  isFavorite,
 }) {
   return (
     <main className="car-detail-page">
@@ -42,18 +44,17 @@ function CarDetails({
             ← Bütün avtomobillər
           </button>
 
-          <div className="detail-heading">
-            <div>
-              <p className="eyebrow">CAR MARKETPLACE / ELAN</p>
-              <h1>{selectedCar.brand} {selectedCar.model}</h1>
-              <p>
-                {selectedCar.year} · {getFuel(selectedCar.fuelType)}
-              </p>
-            </div>
-
-            <div className="detail-price">
-              {formatPrice(selectedCar.price)} <span>AZN</span>
-            </div>
+          {/* Avtomobil haqqında qısa məlumat sətri */}
+          <div className="detail-quick-info">
+            <span>{selectedCar.brand}</span>
+            <span className="quick-info-divider">|</span>
+            <span>{selectedCar.model}</span>
+            <span className="quick-info-divider">|</span>
+            <span>{selectedCar.year}</span>
+            <span className="quick-info-divider">|</span>
+            <span>{formatPrice(selectedCar.mileage)} km</span>
+            <span className="quick-info-divider">|</span>
+            <strong>{formatPrice(selectedCar.price)} AZN</strong>
           </div>
 
           <div className="detail-layout">
@@ -97,6 +98,46 @@ function CarDetails({
                       <span className="gallery-count">
                         {activeImage + 1} / {selectedImages.length}
                       </span>
+
+                      {/* Avtomobil məlumatları və favorit düyməsi şəklin üzərində */}
+                      <div className="detail-image-overlay">
+                        <div className="detail-car-summary">
+                          <span>{selectedCar.brand}</span>
+                          <span className="summary-divider">|</span>
+                          <span>{selectedCar.model}</span>
+                          <span className="summary-divider">|</span>
+                          <span>{selectedCar.year}</span>
+                          <span className="summary-divider">|</span>
+                          <span>{formatPrice(selectedCar.mileage)} km</span>
+                          <span className="summary-divider">|</span>
+                          <strong className="detail-overlay-price">
+                            {formatPrice(selectedCar.price)} AZN
+                          </strong>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={`detail-favorite-button ${
+                            isFavorite(selectedCar.id) ? "active" : ""
+                          }`}
+                          onClick={() => toggleFavorite(selectedCar.id)}
+                          aria-label={
+                            isFavorite(selectedCar.id)
+                              ? "Favoritlərdən çıxar"
+                              : "Favoritlərə əlavə et"
+                          }
+                        >
+                          <span className="favorite-heart">
+                            {isFavorite(selectedCar.id) ? "♥" : "♡"}
+                          </span>
+
+                          <span>
+                            {isFavorite(selectedCar.id)
+                              ? "Favoritlərdən çıxar"
+                              : "Favoritlərə əlavə et"}
+                          </span>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="detail-thumbnails">
@@ -161,6 +202,33 @@ function CarDetails({
                   <span>Yürüş</span>
                   <strong>{formatPrice(selectedCar.mileage)} km</strong>
                 </div>
+                <div className="spec-row">
+                  <span>Ban növü</span>
+                  <strong>{getBodyType(selectedCar.bodyType)}</strong>
+                </div>
+
+                <div className="spec-row">
+                  <span>Mühərrikin həcmi</span>
+                  <strong>
+                    {selectedCar.engineVolume != null
+                      ? `${selectedCar.engineVolume} L`
+                      : "Məlum deyil"}
+                  </strong>
+                </div>
+
+                <div className="spec-row">
+                  <span>At gücü</span>
+                  <strong>
+                    {selectedCar.horsePower != null
+                      ? `${selectedCar.horsePower} a.g.`
+                      : "Məlum deyil"}
+                  </strong>
+                </div>
+
+                <div className="spec-row">
+                  <span>Yürüş</span>
+                  <strong>{formatPrice(selectedCar.mileage)} km</strong>
+                </div>
 
                 <div className="spec-row">
                   <span>Yanacaq</span>
@@ -169,7 +237,9 @@ function CarDetails({
 
                 <div className="spec-row">
                   <span>Sürətlər qutusu</span>
-                  <strong>{getTransmission(selectedCar.transmission)}</strong>
+                  <strong>
+                    {getTransmission(selectedCar.transmission)}
+                  </strong>
                 </div>
 
                 <div className="spec-row">

@@ -16,6 +16,8 @@ import useCars from "./hooks/useCars";
 import useAuth from "./hooks/useAuth";
 import useCarActions from "./hooks/useCarActions";
 import useCarForm from "./hooks/useCarForm";
+import useFavorites from "./hooks/useFavorites";
+import Favorites from "./components/cars/Favorites";
 
 import {
   brands,
@@ -39,8 +41,13 @@ function App() {
     handleAuthChange,
     handleAuthSubmit,
     logout: authLogout,
+    openAuth,
   } = useAuth();
-
+    const {
+      favoriteIds,
+      toggleFavorite,
+      isFavorite,
+    } = useFavorites(token);
   const {
     cars,
     setCars,
@@ -102,6 +109,7 @@ function App() {
 
   const carPageMatch = currentPath.match(/^\/cars\/(\d+)\/?$/);
   const isMyCarsPage = currentPath === "/my-cars";
+  const isFavoritesPage = currentPath === "/favorites";
 
   const selectedCar = carPageMatch
     ? cars.find((car) => String(car.id) === carPageMatch[1]) ||
@@ -299,15 +307,17 @@ function App() {
 
   return (
     <div className="app">
-      <Header
-        token={token}
-        goHome={goHome}
-        goMyCars={goMyCars}
-        openCarForm={openCarForm}
-        logout={logout}
-        setAuthError={setAuthError}
-        setAuthMode={setAuthMode}
-      />
+     <Header
+       token={token}
+       goHome={goHome}
+       goMyCars={goMyCars}
+       goFavorites={() => navigate("/favorites")}
+       openCarForm={openCarForm}
+       logout={logout}
+       setAuthError={setAuthError}
+       setAuthMode={setAuthMode}
+       openAuth={openAuth}
+     />
 
       {isMyCarsPage ? (
         <MyCars
@@ -320,7 +330,13 @@ function App() {
           openCarDetails={openCarDetails}
           handleDeleteCar={handleDeleteCar}
         />
-      ) : !isCarPage ? (
+      ) : isFavoritesPage ? (
+              <Favorites
+                favoriteIds={favoriteIds}
+                toggleFavorite={toggleFavorite}
+                openCarDetails={openCarDetails}
+              />
+            ) : !isCarPage ? (
         <main>
           <Hero
             onBrowseCars={() =>
@@ -341,6 +357,9 @@ function App() {
             filteredCars={filteredCars}
             carImages={carImages}
             openCarDetails={openCarDetails}
+            favoriteIds={favoriteIds}
+            toggleFavorite={toggleFavorite}
+            isFavorite={isFavorite}
           />
 
           <section className="about-section" id="about">
@@ -365,6 +384,9 @@ function App() {
           setShowLightbox={setShowLightbox}
           previousImage={previousImage}
           nextImage={nextImage}
+          favoriteIds={favoriteIds}
+          toggleFavorite={toggleFavorite}
+          isFavorite={isFavorite}
         />
       )}
 
