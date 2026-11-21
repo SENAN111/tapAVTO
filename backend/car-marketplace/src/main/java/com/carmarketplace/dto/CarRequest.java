@@ -4,6 +4,8 @@ package com.carmarketplace.dto;
 import com.carmarketplace.entity.enums.BodyType;
 import com.carmarketplace.entity.enums.FuelType;
 import com.carmarketplace.entity.enums.Transmission;
+import com.carmarketplace.entity.enums.SeatCount;
+import com.carmarketplace.entity.enums.Drivetrain;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
@@ -72,6 +74,12 @@ public class CarRequest {
 
     @NotNull(message = "Ban növü seçilməlidir")
     private BodyType bodyType;
+
+    @NotNull(message = "Oturacaq sayı seçilməlidir")
+    private SeatCount seatCount;
+
+    @NotNull(message = "Ötürücü növü seçilməlidir")
+    private Drivetrain drivetrain;
 
     @NotBlank(message = "Rəng qeyd edilməlidir")
     @Size(max = 50, message = "Rəng maksimum 50 simvol ola bilər")

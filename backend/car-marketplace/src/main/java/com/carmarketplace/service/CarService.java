@@ -9,6 +9,8 @@ import com.carmarketplace.entity.User;
 import com.carmarketplace.entity.enums.CarStatus;
 import com.carmarketplace.entity.enums.FuelType;
 import com.carmarketplace.entity.enums.Transmission;
+import com.carmarketplace.entity.enums.SeatCount;
+import com.carmarketplace.entity.enums.Drivetrain;
 import com.carmarketplace.repository.CarRepository;
 import com.carmarketplace.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -174,6 +176,8 @@ public class CarService {
         existingCar.setFuelType(request.getFuelType());
         existingCar.setTransmission(request.getTransmission());
         existingCar.setBodyType(request.getBodyType());
+        existingCar.setSeatCount(request.getSeatCount());
+        existingCar.setDrivetrain(request.getDrivetrain());
         existingCar.setColor(request.getColor());
         existingCar.setDescription(request.getDescription());
         existingCar.setContactPhone(request.getContactPhone());
@@ -233,6 +237,8 @@ public class CarService {
         car.setFuelType(request.getFuelType());
         car.setTransmission(request.getTransmission());
         car.setBodyType(request.getBodyType());
+        car.setSeatCount(request.getSeatCount());
+        car.setDrivetrain(request.getDrivetrain());
         car.setColor(request.getColor());
         car.setDescription(request.getDescription());
         car.setContactPhone(request.getContactPhone());
@@ -259,6 +265,8 @@ public class CarService {
 
         response.setFuelType(car.getFuelType());
         response.setTransmission(car.getTransmission());
+        response.setSeatCount(car.getSeatCount());
+        response.setDrivetrain(car.getDrivetrain());
         response.setBodyType(car.getBodyType());
         response.setColor(car.getColor());
         response.setDescription(car.getDescription());

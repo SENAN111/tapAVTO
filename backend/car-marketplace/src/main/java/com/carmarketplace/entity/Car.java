@@ -5,6 +5,8 @@ import com.carmarketplace.entity.enums.BodyType;
 import com.carmarketplace.entity.enums.CarStatus;
 import com.carmarketplace.entity.enums.FuelType;
 import com.carmarketplace.entity.enums.Transmission;
+import com.carmarketplace.entity.enums.SeatCount;
+import com.carmarketplace.entity.enums.Drivetrain;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -56,6 +58,14 @@ public class Car {
     @Enumerated(EnumType.STRING)
     @Column(name = "body_type", length = 30)
     private BodyType bodyType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "seat_count", length = 20)
+    private SeatCount seatCount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "drivetrain", length = 20)
+    private Drivetrain drivetrain;
 
     @Column(nullable = false, length = 50)
     private String color;
