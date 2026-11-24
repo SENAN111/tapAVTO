@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
+
 @Entity
 @Table(name = "car_catalog")
 @Getter
@@ -41,9 +44,8 @@ public class CarCatalog {
     // Kataloqda mühərrik həcmi cc ilə saxlanılır
     private Integer engineDisplacement;
 
-    private Integer enginePowerBhp;
-
-    private Integer enginePowerKw;
+    private BigDecimal enginePowerBhp;
+    private BigDecimal enginePowerKw;
 
     @Column(length = 30)
     private String engineFuelType;
@@ -55,4 +57,7 @@ public class CarCatalog {
 
     @Column(length = 30)
     private String drivetrain;
+
+    @Column(length = 200)
+    private String generation;
 }
