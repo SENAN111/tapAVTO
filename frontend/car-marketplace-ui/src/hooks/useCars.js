@@ -4,135 +4,223 @@ import { API_URL } from "../data/carData";
 import { fetchCars } from "../services/carService";
 
 function useCars(token) {
-  const [cars, setCars] = useState([]);
-  const [myCars, setMyCars] = useState([]);
-  const [carImages, setCarImages] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+    const [cars, setCars] = useState([]);
+    const [myCars, setMyCars] = useState([]);
+    const [carImages, setCarImages] = useState({});
+    const [myEditRequests, setMyEditRequests] = useState([]);
 
-  // Avtomobillərin şəkillərini yükləyirik
-  const loadImagesForCars = useCallback(async (carList) => {
-    const results = await Promise.all(
-      carList.map(async (car) => {
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [editRequestsLoading, setEditRequestsLoading] = useState(false);
+
+    // Avtomobillərin şəkillərini yükləyirik.
+    const loadImagesForCars = useCallback(async (carList) => {
+        const results = await Promise.all(
+            carList.map(async (car) => {
+                try {
+                    const imageResponse = await fetch(
+                        `${API_URL}/${car.id}/images`
+                    );
+
+                    if (!imageResponse.ok) {
+                        return [car.id, []];
+                    }
+
+                    const imageData = await imageResponse.json();
+
+                    const images = Array.isArray(imageData)
+                        ? imageData
+                        : imageData.content || [];
+
+                    images.sort(
+                        (a, b) =>
+                            (a.displayOrder || 0) -
+                            (b.displayOrder || 0)
+                    );
+
+                    return [car.id, images];
+                } catch {
+                    return [car.id, []];
+                }
+            })
+        );
+
+        setCarImages((previous) => ({
+            ...previous,
+            ...Object.fromEntries(results),
+        }));
+    }, []);
+
+    // Bütün avtomobilləri yükləyirik.
+    const loadCars = useCallback(async () => {
         try {
-          const imageResponse = await fetch(
-            `${API_URL}/${car.id}/images`
-          );
+            setLoading(true);
+            setError("");
 
-          if (!imageResponse.ok) return [car.id, []];
+            const carList = await fetchCars();
 
-          const imageData = await imageResponse.json();
-
-          const images = Array.isArray(imageData)
-            ? imageData
-            : imageData.content || [];
-
-          images.sort(
-            (a, b) =>
-              (a.displayOrder || 0) - (b.displayOrder || 0)
-          );
-
-          return [car.id, images];
-        } catch {
-          return [car.id, []];
+            setCars(carList);
+            await loadImagesForCars(carList);
+        } catch (err) {
+            setError(err.message || "Xəta baş verdi.");
+        } finally {
+            setLoading(false);
         }
-      })
+    }, [loadImagesForCars]);
+
+    // İstifadəçinin şəxsi elanlarını yükləyirik.
+    const loadMyCars = useCallback(
+        async (authToken = token) => {
+            if (!authToken) {
+                setMyCars([]);
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `${API_URL}/my-cars`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${authToken}`,
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    if (
+                        response.status === 401 ||
+                        response.status === 403
+                    ) {
+                        throw new Error(
+                            "Sessiyanın vaxtı bitib. Yenidən daxil olun."
+                        );
+                    }
+
+                    throw new Error(
+                        "Şəxsi elanları yükləmək mümkün olmadı."
+                    );
+                }
+
+                const data = await response.json();
+
+                const carList = Array.isArray(data)
+                    ? data
+                    : data.content || [];
+
+                setMyCars(carList);
+
+                await loadImagesForCars(carList);
+            } catch (err) {
+                setError(
+                    err.message ||
+                    "Elanları yükləmək mümkün olmadı."
+                );
+            }
+        },
+        [token, loadImagesForCars]
     );
 
-    setCarImages((previous) => ({
-      ...previous,
-      ...Object.fromEntries(results),
-    }));
-  }, []);
+    // İstifadəçinin redaktə sorğularını yükləyirik.
+    const loadMyEditRequests = useCallback(
+        async (authToken = token) => {
+            if (!authToken) {
+                setMyEditRequests([]);
+                setEditRequestsLoading(false);
+                return [];
+            }
 
-  // Bütün avtomobilləri yükləyirik
-  const loadCars = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
+            try {
+                setEditRequestsLoading(true);
 
-      const carList = await fetchCars();
+                const response = await fetch(
+                    `${API_URL}/my-edit-requests`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${authToken}`,
+                        },
+                    }
+                );
 
-      setCars(carList);
-      await loadImagesForCars(carList);
-    } catch (err) {
-      setError(err.message || "Xəta baş verdi.");
-    } finally {
-      setLoading(false);
-    }
-  }, [loadImagesForCars]);
+                if (!response.ok) {
+                    if (
+                        response.status === 401 ||
+                        response.status === 403
+                    ) {
+                        throw new Error(
+                            "Redaktə sorğularını görmək üçün yenidən daxil olun."
+                        );
+                    }
 
-  // İstifadəçinin şəxsi elanlarını yükləyirik
-  const loadMyCars = useCallback(async (authToken = token) => {
-    if (!authToken) {
-      setMyCars([]);
-      return;
-    }
+                    throw new Error(
+                        "Redaktə sorğularını yükləmək mümkün olmadı."
+                    );
+                }
 
-    try {
-      const response = await fetch(`${API_URL}/my-cars`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
+                const data = await response.json();
+
+                const requests = Array.isArray(data)
+                    ? data
+                    : data.content || [];
+
+                setMyEditRequests(requests);
+
+                return requests;
+            } catch (err) {
+                console.error(
+                    "Redaktə sorğularının yüklənməsi zamanı xəta:",
+                    err
+                );
+
+                setMyEditRequests([]);
+
+                return [];
+            } finally {
+                setEditRequestsLoading(false);
+            }
         },
-      });
+        [token]
+    );
 
-      if (!response.ok) {
-        if (
-          response.status === 401 ||
-          response.status === 403
-        ) {
-          throw new Error(
-            "Sessiyanın vaxtı bitib. Yenidən daxil olun."
-          );
+    // İlk yükləmə.
+    useEffect(() => {
+        loadCars();
+    }, [loadCars]);
+
+    // Token dəyişəndə istifadəçinin məlumatlarını yeniləyirik.
+    useEffect(() => {
+        if (token) {
+            loadMyCars(token);
+            loadMyEditRequests(token);
+        } else {
+            setMyCars([]);
+            setMyEditRequests([]);
+            setEditRequestsLoading(false);
         }
+    }, [token, loadMyCars, loadMyEditRequests]);
 
-        throw new Error(
-          "Şəxsi elanları yükləmək mümkün olmadı."
-        );
-      }
+    return {
+        cars,
+        setCars,
 
-      const data = await response.json();
+        myCars,
+        setMyCars,
 
-      const carList = Array.isArray(data)
-        ? data
-        : data.content || [];
+        carImages,
+        setCarImages,
 
-      setMyCars(carList);
-      await loadImagesForCars(carList);
-    } catch (err) {
-      setError(
-        err.message || "Elanları yükləmək mümkün olmadı."
-      );
-    }
-  }, [token, loadImagesForCars]);
+        myEditRequests,
+        setMyEditRequests,
 
-  // İlk yükləmə
-  useEffect(() => {
-    loadCars();
-  }, [loadCars]);
+        loading,
+        error,
+        setError,
 
-  // Token dəyişəndə şəxsi elanları yeniləyirik
-  useEffect(() => {
-    if (token) {
-      loadMyCars(token);
-    } else {
-      setMyCars([]);
-    }
-  }, [token, loadMyCars]);
+        editRequestsLoading,
 
-  return {
-    cars,
-    setCars,
-    myCars,
-    setMyCars,
-    carImages,
-    setCarImages,
-    loading,
-    error,
-    setError,
-    loadCars,
-    loadMyCars,
-  };
+        loadCars,
+        loadMyCars,
+        loadMyEditRequests,
+    };
 }
 
 export default useCars;

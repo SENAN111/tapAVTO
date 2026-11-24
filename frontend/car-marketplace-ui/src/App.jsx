@@ -40,7 +40,13 @@ function getUserRoles(token) {
             .replace(/-/g, "+")
             .replace(/_/g, "/");
 
-        const decoded = JSON.parse(atob(normalizedPayload));
+        const paddedPayload =
+            normalizedPayload +
+            "=".repeat(
+                (4 - (normalizedPayload.length % 4)) % 4
+            );
+
+        const decoded = JSON.parse(atob(paddedPayload));
 
         const roles =
             decoded.roles ||
@@ -95,10 +101,13 @@ function App() {
         setMyCars,
         carImages,
         setCarImages,
+        myEditRequests,
+        editRequestsLoading,
         loading,
         error,
         loadCars,
         loadMyCars,
+        loadMyEditRequests,
     } = useCars(token);
 
     const [search, setSearch] = useState("");
@@ -114,10 +123,21 @@ function App() {
     const [carFormLoading, setCarFormLoading] = useState(false);
 
     const [draftCarId, setDraftCarId] = useState(null);
-    const [pendingEditRequestId, setPendingEditRequestId] = useState(null);
-    const [uploadedEditImageCount, setUploadedEditImageCount] = useState(0);
+
+    const [pendingEditRequestId, setPendingEditRequestId] =
+        useState(null);
+
+    // Hazırda seçilmiş yeni şəkillərin yüklənmə sayı.
+    const [uploadedEditImageCount, setUploadedEditImageCount] =
+        useState(0);
+
+    // Serverdə redaktə sorğusuna əvvəlcədən yüklənmiş şəkillərin sayı.
+    const [stagedEditImageCount, setStagedEditImageCount] =
+        useState(0);
+
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [uploadedImageCount, setUploadedImageCount] = useState(0);
+
     const [uploading, setUploading] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [imageError, setImageError] = useState("");
@@ -137,17 +157,21 @@ function App() {
         colorChoice,
         phonePrefix,
         phoneNumber,
+
         carFormError,
         setCarFormError,
+
         resetCarForm: resetCarFormFields,
         openCarForm: openCarFormFromHook,
         closeCarForm: closeCarFormFromHook,
+
         handleBrandChange,
         handleModelChange,
         handleCarChange,
         handleColorChange,
         handlePhonePrefixChange,
         handlePhoneNumberChange,
+
         openEditForm: openEditFormFromHook,
     } = useCarForm({
         token,
@@ -161,12 +185,10 @@ function App() {
         ["ROLE_ADMIN", "ADMIN"].includes(role)
     );
 
-    // Admin səhifəsinin yoxlanılması
     const isAdminPage =
         currentPath === "/admin" ||
         currentPath.startsWith("/admin/");
 
-    // Bildirişdən gələn avtomobil ID-si
     const adminCarMatch = currentPath.match(
         /^\/admin\/(\d+)\/?$/
     );
@@ -175,7 +197,6 @@ function App() {
         ? adminCarMatch[1]
         : null;
 
-    // Avtomobil detalları səhifəsinin yoxlanılması
     const carPageMatch = currentPath.match(
         /^\/cars\/(\d+)\/?$/
     );
@@ -198,25 +219,33 @@ function App() {
         ? carImages[selectedCar.id] || []
         : [];
 
-    // Səhifələr arasında keçid
+    // Redaktə edilən avtomobilin mövcud şəkillərinin sayı.
+    const existingImageCount = editingCarId
+        ? (carImages[editingCarId] || []).length
+        : 0;
+
     function navigate(path) {
         window.history.pushState({}, "", path);
+
         setCurrentPath(path);
         setActiveImage(0);
         setShowLightbox(false);
+
         window.scrollTo(0, 0);
     }
 
-    // Elan formasını sıfırla
     function resetCarForm() {
         resetCarFormFields();
+
         setDraftCarId(null);
         setSelectedFiles([]);
         setUploadedImageCount(0);
         setImageError("");
         setCarFormLoading(false);
+
         setPendingEditRequestId(null);
         setUploadedEditImageCount(0);
+        setStagedEditImageCount(0);
     }
 
     function openCarForm() {
@@ -231,11 +260,15 @@ function App() {
 
     function closeCarForm() {
         closeCarFormFromHook();
+
         setDraftCarId(null);
         setSelectedFiles([]);
         setUploadedImageCount(0);
         setImageError("");
         setCarFormLoading(false);
+
+        // Pending sorğunun ID-sini və serverdəki şəkil sayını saxlayırıq.
+        // Modal yenidən açılanda serverdən bərpa ediləcək.
     }
 
     function openEditForm(car) {
@@ -244,44 +277,106 @@ function App() {
         setDraftCarId(null);
         setSelectedFiles([]);
         setUploadedImageCount(0);
+
         setPendingEditRequestId(null);
         setUploadedEditImageCount(0);
+        setStagedEditImageCount(0);
+
         setImageError("");
         setCarFormError("");
         setCarFormLoading(false);
     }
 
-    // Brauzerin geri düyməsi
+    // Mövcud redaktə sorğusunu serverdən bərpa et.
+    useEffect(() => {
+        if (
+            !showCarForm ||
+            !editingCarId ||
+            !token ||
+            editRequestsLoading
+        ) {
+            return;
+        }
+
+        const canHaveEditRequest = [
+            "APPROVED",
+            "PUBLISHED",
+        ].includes(editingCarStatus);
+
+        if (!canHaveEditRequest) {
+            setPendingEditRequestId(null);
+            setUploadedEditImageCount(0);
+            setStagedEditImageCount(0);
+            return;
+        }
+
+        const pendingRequest = myEditRequests.find(
+            (request) =>
+                String(request.carId) === String(editingCarId) &&
+                request.status === "PENDING"
+        );
+
+        if (pendingRequest) {
+            setPendingEditRequestId(pendingRequest.id);
+
+            // Yeni seçilmiş fayllar olmadığı üçün sıfırdan başlayır.
+            setUploadedEditImageCount(0);
+
+            // Əvvəlki şəkillər serverdə saxlanılır.
+            setStagedEditImageCount(
+                Array.isArray(pendingRequest.imageUrls)
+                    ? pendingRequest.imageUrls.length
+                    : 0
+            );
+        } else {
+            setPendingEditRequestId(null);
+            setUploadedEditImageCount(0);
+            setStagedEditImageCount(0);
+        }
+    }, [
+        showCarForm,
+        editingCarId,
+        editingCarStatus,
+        token,
+        myEditRequests,
+        editRequestsLoading,
+    ]);
+
+    // Brauzerin geri düyməsi.
     useEffect(() => {
         function handlePopState() {
             setCurrentPath(window.location.pathname);
             setActiveImage(0);
             setShowLightbox(false);
+
             window.scrollTo(0, 0);
         }
 
         window.addEventListener("popstate", handlePopState);
 
         return () => {
-            window.removeEventListener("popstate", handlePopState);
+            window.removeEventListener(
+                "popstate",
+                handlePopState
+            );
         };
     }, []);
 
-    // Admin daxil olduqda panelə yönləndir
+    // Admin daxil olduqda panelə yönləndir.
     useEffect(() => {
         if (token && isAdmin && !isAdminPage) {
             navigate("/admin");
         }
     }, [token]);
 
-    // Admin olmayan istifadəçinin admin səhifəsinə girişini bağla
+    // Admin olmayan istifadəçinin admin səhifəsinə girişini bağla.
     useEffect(() => {
         if (isAdminPage && (!token || !isAdmin)) {
             navigate("/");
         }
     }, [currentPath, token, isAdmin]);
 
-    // Şəkil böyüdülmüş pəncərəsinin idarə edilməsi
+    // Şəkil böyüdülmüş pəncərəsinin idarə edilməsi.
     useEffect(() => {
         if (!showLightbox) return;
 
@@ -329,7 +424,7 @@ function App() {
         };
     }, [showLightbox, selectedImages.length]);
 
-    // Avtomobillərin axtarışı və filtrasiyası
+    // Avtomobillərin axtarışı və filtrasiyası.
     const filteredCars = cars.filter((car) => {
         const text =
             `${car.brand || ""} ${car.model || ""} ${car.year || ""}`
@@ -338,7 +433,8 @@ function App() {
         const matchesSearch = text.includes(search.toLowerCase());
 
         const matchesCategory =
-            category === "all" || getCategory(car) === category;
+            category === "all" ||
+            getCategory(car) === category;
 
         return matchesSearch && matchesCategory;
     });
@@ -358,6 +454,7 @@ function App() {
     function goMyCars() {
         navigate("/my-cars");
         loadMyCars(token);
+        loadMyEditRequests(token);
     }
 
     function nextImage() {
@@ -381,12 +478,15 @@ function App() {
 
     function logout() {
         authLogout();
+
         setMyCars([]);
         setShowLightbox(false);
+
         closeCarForm();
         navigate("/");
     }
 
+    // Avtomobil əməliyyatları.
     const {
         handleCarSubmit,
         handleDeleteCar,
@@ -398,10 +498,16 @@ function App() {
         carForm,
         phonePrefix,
         phoneNumber,
+
         editingCarId,
         editingCarStatus,
+
         pendingEditRequestId,
         uploadedEditImageCount,
+        stagedEditImageCount,
+
+        existingImageCount,
+
         draftCarId,
         selectedFiles,
         uploadedImageCount,
@@ -413,8 +519,13 @@ function App() {
         setImageError,
         setSelectedFiles,
         setUploadedImageCount,
+
+        setPendingEditRequestId,
+        setUploadedEditImageCount,
+
         setUploading,
         setPublishing,
+
         setMyCars,
         setCars,
         setCarImages,
@@ -427,7 +538,6 @@ function App() {
 
     return (
         <div className="app">
-
             <Header
                 token={token}
                 goHome={goHome}
@@ -550,6 +660,8 @@ function App() {
                         editingCarStatus={editingCarStatus}
                         pendingEditRequestId={pendingEditRequestId}
                         uploadedEditImageCount={uploadedEditImageCount}
+                        stagedEditImageCount={stagedEditImageCount}
+                        existingImageCount={existingImageCount}
                         draftCarId={draftCarId}
                         setDraftCarId={setDraftCarId}
                         brands={brands}

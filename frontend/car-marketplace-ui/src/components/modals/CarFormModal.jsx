@@ -7,32 +7,34 @@ function CarFormModal({
     editingCarId,
     editingCarStatus,
     pendingEditRequestId,
-    uploadedEditImageCount,
+    uploadedEditImageCount = 0,
+    existingImageCount = 0,
+    stagedEditImageCount = 0,
     draftCarId,
     setDraftCarId,
-    brands,
-    carModels,
-    modelsLoading,
+    brands = [],
+    carModels = [],
+    modelsLoading = false,
     brandChoice,
     handleBrandChange,
     modelChoice,
     handleModelChange,
     carForm,
     handleCarChange,
-    bodyTypes,
+    bodyTypes = [],
     colorChoice,
     handleColorChange,
-    carColors,
+    carColors = [],
     phonePrefix,
     handlePhonePrefixChange,
-    phonePrefixes,
+    phonePrefixes = [],
     phoneNumber,
     handlePhoneNumberChange,
     carFormError,
     carFormLoading,
     handleCarSubmit,
-    selectedFiles,
-    uploadedImageCount,
+    selectedFiles = [],
+    uploadedImageCount = 0,
     handleFilesChange,
     imageError,
     uploading,
@@ -45,11 +47,31 @@ function CarFormModal({
 }) {
     if (!showCarForm) return null;
 
-    const descriptionLength = (carForm.description || "").length;
+    const safeBrands = Array.isArray(brands) ? brands : [];
+    const safeCarModels = Array.isArray(carModels) ? carModels : [];
+    const safeBodyTypes = Array.isArray(bodyTypes) ? bodyTypes : [];
+    const safeCarColors = Array.isArray(carColors) ? carColors : [];
+    const safePhonePrefixes = Array.isArray(phonePrefixes) ? phonePrefixes : [];
+    const safeSelectedFiles = Array.isArray(selectedFiles) ? selectedFiles : [];
+    const safeCities = Array.isArray(cities) ? cities : [];
+
+    const descriptionLength = (carForm?.description || "").length;
 
     const isEditRequest =
         editingCarId &&
         ["APPROVED", "PUBLISHED"].includes(editingCarStatus);
+
+    const isEditRequestPending = Boolean(pendingEditRequestId);
+
+    const maxAdditionalImages = Math.max(
+        0,
+        10 - existingImageCount - stagedEditImageCount
+    );
+
+    const totalSelectedEditImages =
+        existingImageCount +
+        stagedEditImageCount +
+        safeSelectedFiles.length;
 
     return (
         <div
@@ -82,7 +104,9 @@ function CarFormModal({
 
                     <p>
                         {isEditRequest
-                            ? "Dəyişikliklər admin tərəfindən yoxlanıldıqdan sonra elana tətbiq olunacaq."
+                            ? isEditRequestPending
+                                ? "Redaktə sorğusu yaradılıb. Şəkil yükləməsini davam etdirə bilərsiniz."
+                                : "Dəyişikliklər admin tərəfindən yoxlanıldıqdan sonra elana tətbiq olunacaq."
                             : editingCarId
                                 ? "Avtomobil məlumatlarını yeniləyin."
                                 : draftCarId
@@ -94,7 +118,9 @@ function CarFormModal({
                 {!editingCarId && (
                     <div className="listing-steps">
                         <div
-                            className={`listing-step ${!draftCarId ? "active" : "completed"}`}
+                            className={`listing-step ${
+                                !draftCarId ? "active" : "completed"
+                            }`}
                         >
                             <span>{draftCarId ? "✓" : "1"}</span>
                             <div>
@@ -105,7 +131,11 @@ function CarFormModal({
 
                         <div className="listing-step-line" />
 
-                        <div className={`listing-step ${draftCarId ? "active" : ""}`}>
+                        <div
+                            className={`listing-step ${
+                                draftCarId ? "active" : ""
+                            }`}
+                        >
                             <span>2</span>
                             <div>
                                 <strong>Şəkillər</strong>
@@ -124,33 +154,38 @@ function CarFormModal({
                             <label>Avtomobil markası</label>
 
                             <select
-                                value={brandChoice}
+                                value={brandChoice || ""}
                                 onChange={handleBrandChange}
                                 required
+                                disabled={isEditRequestPending}
                             >
                                 <option value="">Marka seçin</option>
 
-                                {brands.map((brand) => (
+                                {safeBrands.map((brand) => (
                                     <option key={brand} value={brand}>
-                                        {brand === "Land_Rover" ? "Land Rover" : brand}
+                                        {brand === "Land_Rover"
+                                            ? "Land Rover"
+                                            : brand}
                                     </option>
                                 ))}
 
-                                <option value="__OTHER__">Digər marka</option>
+                                <option value="__OTHER__">
+                                    Digər marka
+                                </option>
                             </select>
                         </div>
 
                         {brandChoice === "__OTHER__" && (
                             <div className="listing-field">
                                 <label>Markanın adı</label>
-
                                 <input
                                     name="brand"
                                     placeholder="Markanın adını daxil edin"
-                                    value={carForm.brand}
+                                    value={carForm.brand || ""}
                                     onChange={handleCarChange}
                                     maxLength={50}
                                     required
+                                    disabled={isEditRequestPending}
                                 />
                             </div>
                         )}
@@ -160,9 +195,10 @@ function CarFormModal({
                                 <label>Avtomobil modeli</label>
 
                                 <select
-                                    value={modelChoice}
+                                    value={modelChoice || ""}
                                     onChange={handleModelChange}
                                     required
+                                    disabled={isEditRequestPending}
                                 >
                                     <option value="">Model seçin</option>
 
@@ -171,14 +207,16 @@ function CarFormModal({
                                             Modellər yüklənir...
                                         </option>
                                     ) : (
-                                        carModels.map((model) => (
+                                        safeCarModels.map((model) => (
                                             <option key={model} value={model}>
                                                 {model}
                                             </option>
                                         ))
                                     )}
 
-                                    <option value="__OTHER__">Digər model</option>
+                                    <option value="__OTHER__">
+                                        Digər model
+                                    </option>
                                 </select>
                             </div>
                         )}
@@ -186,14 +224,14 @@ function CarFormModal({
                         {modelChoice === "__OTHER__" && (
                             <div className="listing-field">
                                 <label>Modelin adı</label>
-
                                 <input
                                     name="model"
                                     placeholder="Modelin adını daxil edin"
-                                    value={carForm.model}
+                                    value={carForm.model || ""}
                                     onChange={handleCarChange}
                                     maxLength={50}
                                     required
+                                    disabled={isEditRequestPending}
                                 />
                             </div>
                         )}
@@ -201,66 +239,65 @@ function CarFormModal({
                         {brandChoice === "__OTHER__" && (
                             <div className="listing-field">
                                 <label>Avtomobil modeli</label>
-
                                 <input
                                     name="model"
                                     placeholder="Modelin adını daxil edin"
-                                    value={carForm.model}
+                                    value={carForm.model || ""}
                                     onChange={handleCarChange}
                                     maxLength={50}
                                     required
+                                    disabled={isEditRequestPending}
                                 />
                             </div>
                         )}
 
                         <div className="listing-field">
                             <label>Buraxılış ili</label>
-
                             <input
                                 name="year"
                                 type="number"
                                 placeholder="Məsələn: 2020"
                                 min="1886"
                                 max={new Date().getFullYear()}
-                                value={carForm.year}
+                                value={carForm.year || ""}
                                 onChange={handleCarChange}
                                 required
+                                disabled={isEditRequestPending}
                             />
                         </div>
 
                         <div className="listing-field">
                             <label>Qiymət (AZN)</label>
-
                             <input
                                 name="price"
                                 type="number"
                                 placeholder="Məsələn: 25000"
                                 min="0.01"
                                 step="0.01"
-                                value={carForm.price}
+                                value={carForm.price || ""}
                                 onChange={handleCarChange}
                                 required
+                                disabled={isEditRequestPending}
                             />
                         </div>
 
                         <div className="listing-field">
                             <label>Yürüş (km)</label>
-
                             <input
                                 name="mileage"
                                 type="number"
                                 placeholder="Məsələn: 85000"
                                 min="0"
                                 step="1"
-                                value={carForm.mileage}
+                                value={carForm.mileage || ""}
                                 onChange={handleCarChange}
                                 required
+                                disabled={isEditRequestPending}
                             />
                         </div>
 
                         <div className="listing-field">
                             <label>Mühərrikin gücü (at gücü)</label>
-
                             <input
                                 name="horsePower"
                                 type="number"
@@ -268,15 +305,15 @@ function CarFormModal({
                                 min="1"
                                 max="2000"
                                 step="1"
-                                value={carForm.horsePower}
+                                value={carForm.horsePower || ""}
                                 onChange={handleCarChange}
                                 required
+                                disabled={isEditRequestPending}
                             />
                         </div>
 
                         <div className="listing-field">
                             <label>Mühərrikin həcmi (L)</label>
-
                             <input
                                 name="engineVolume"
                                 type="number"
@@ -284,20 +321,21 @@ function CarFormModal({
                                 min="0.1"
                                 max="99.9"
                                 step="0.1"
-                                value={carForm.engineVolume}
+                                value={carForm.engineVolume || ""}
                                 onChange={handleCarChange}
                                 required
+                                disabled={isEditRequestPending}
                             />
                         </div>
 
                         <div className="listing-field">
                             <label>Yanacaq növü</label>
-
                             <select
                                 name="fuelType"
-                                value={carForm.fuelType}
+                                value={carForm.fuelType || "PETROL"}
                                 onChange={handleCarChange}
                                 required
+                                disabled={isEditRequestPending}
                             >
                                 <option value="PETROL">Benzin</option>
                                 <option value="DIESEL">Dizel</option>
@@ -310,12 +348,12 @@ function CarFormModal({
 
                         <div className="listing-field">
                             <label>Sürətlər qutusu</label>
-
                             <select
                                 name="transmission"
-                                value={carForm.transmission}
+                                value={carForm.transmission || "AUTOMATIC"}
                                 onChange={handleCarChange}
                                 required
+                                disabled={isEditRequestPending}
                             >
                                 <option value="AUTOMATIC">Avtomat</option>
                                 <option value="MANUAL">Mexaniki</option>
@@ -326,17 +364,20 @@ function CarFormModal({
 
                         <div className="listing-field">
                             <label>Ban növü</label>
-
                             <select
                                 name="bodyType"
-                                value={carForm.bodyType}
+                                value={carForm.bodyType || ""}
                                 onChange={handleCarChange}
                                 required
+                                disabled={isEditRequestPending}
                             >
                                 <option value="">Ban növünü seçin</option>
 
-                                {bodyTypes.map((type) => (
-                                    <option key={type.value} value={type.value}>
+                                {safeBodyTypes.map((type) => (
+                                    <option
+                                        key={type.value}
+                                        value={type.value}
+                                    >
                                         {type.label}
                                     </option>
                                 ))}
@@ -345,12 +386,12 @@ function CarFormModal({
 
                         <div className="listing-field">
                             <label>Oturacaq sayı</label>
-
                             <select
                                 name="seatCount"
                                 value={carForm.seatCount || ""}
                                 onChange={handleCarChange}
                                 required
+                                disabled={isEditRequestPending}
                             >
                                 <option value="">Oturacaq sayını seçin</option>
                                 <option value="TWO">2 oturacaq</option>
@@ -366,12 +407,12 @@ function CarFormModal({
 
                         <div className="listing-field">
                             <label>Ötürücü növü</label>
-
                             <select
                                 name="drivetrain"
                                 value={carForm.drivetrain || ""}
                                 onChange={handleCarChange}
                                 required
+                                disabled={isEditRequestPending}
                             >
                                 <option value="">Ötürücü növünü seçin</option>
                                 <option value="FWD">Ön ötürücü (FWD)</option>
@@ -383,15 +424,15 @@ function CarFormModal({
 
                         <div className="listing-field">
                             <label>Avtomobilin rəngi</label>
-
                             <select
-                                value={colorChoice}
+                                value={colorChoice || ""}
                                 onChange={handleColorChange}
                                 required
+                                disabled={isEditRequestPending}
                             >
                                 <option value="">Rəng seçin</option>
 
-                                {carColors.map((color) => (
+                                {safeCarColors.map((color) => (
                                     <option key={color} value={color}>
                                         {color}
                                     </option>
@@ -402,31 +443,31 @@ function CarFormModal({
                         {colorChoice === "Digər" && (
                             <div className="listing-field">
                                 <label>Rəngin adı</label>
-
                                 <input
                                     type="text"
                                     name="color"
                                     placeholder="Rəngi daxil edin"
-                                    maxLength="50"
-                                    value={carForm.color}
+                                    maxLength={50}
+                                    value={carForm.color || ""}
                                     onChange={handleCarChange}
                                     required
+                                    disabled={isEditRequestPending}
                                 />
                             </div>
                         )}
 
                         <div className="listing-field full-width">
                             <label>Şəhər</label>
-
                             <select
                                 name="location"
-                                value={carForm.location}
+                                value={carForm.location || ""}
                                 onChange={handleCarChange}
                                 required
+                                disabled={isEditRequestPending}
                             >
                                 <option value="">Şəhər seçin</option>
 
-                                {cities.map((city) => (
+                                {safeCities.map((city) => (
                                     <option key={city} value={city}>
                                         {city}
                                     </option>
@@ -436,16 +477,15 @@ function CarFormModal({
 
                         <div className="listing-field full-width">
                             <label>Avtomobil haqqında məlumat</label>
-
                             <textarea
                                 name="description"
                                 placeholder="Avtomobilin vəziyyəti və digər xüsusiyyətləri haqqında məlumat yazın..."
-                                maxLength="2000"
-                                rows="4"
-                                value={carForm.description}
+                                maxLength={2000}
+                                rows={4}
+                                value={carForm.description || ""}
                                 onChange={handleCarChange}
+                                disabled={isEditRequestPending}
                             />
-
                             <small>{descriptionLength}/2000 simvol</small>
                         </div>
 
@@ -454,12 +494,13 @@ function CarFormModal({
 
                             <div className="phone-input-group">
                                 <select
-                                    value={phonePrefix}
+                                    value={phonePrefix || ""}
                                     onChange={handlePhonePrefixChange}
                                     aria-label="Mobil operator prefiksi"
                                     required
+                                    disabled={isEditRequestPending}
                                 >
-                                    {phonePrefixes.map((prefix) => (
+                                    {safePhonePrefixes.map((prefix) => (
                                         <option
                                             key={prefix.value}
                                             value={prefix.value}
@@ -472,20 +513,20 @@ function CarFormModal({
                                 <input
                                     type="tel"
                                     placeholder="1234567"
-                                    value={phoneNumber}
+                                    value={phoneNumber || ""}
                                     onChange={handlePhoneNumberChange}
                                     inputMode="numeric"
                                     maxLength={7}
                                     pattern="[0-9]{7}"
                                     title="Telefon nömrəsinin son 7 rəqəmini daxil edin"
                                     required
+                                    disabled={isEditRequestPending}
                                 />
                             </div>
 
                             <small>
                                 Operatoru seçin və nömrənin son 7 rəqəmini daxil edin.
                             </small>
-
                             <small>
                                 Tam nömrə: {phonePrefix} {phoneNumber || "XXXXXXX"}
                             </small>
@@ -497,78 +538,100 @@ function CarFormModal({
 
                                 <p>
                                     Mövcud şəkillər saxlanılacaq. Seçdiyiniz
-                                    yeni şəkillər admin təsdiqindən sonra elana əlavə ediləcək.
+                                    yeni şəkillər admin təsdiqindən sonra
+                                    elana əlavə ediləcək.
                                 </p>
 
-                                <label
-                                    className="upload-zone"
-                                    htmlFor="edit-request-images"
-                                >
-                                    <span className="upload-icon">＋</span>
-                                    <strong>Yeni şəkillər seçin</strong>
-                                    <span>JPG, PNG və digər şəkil formatları</span>
-                                    <small>Maksimum 10 şəkil</small>
-                                </label>
+                                <div className="upload-stats">
+                                    <div>
+                                        <strong>{existingImageCount}/10</strong>
+                                        <span>Mövcud şəkillər</span>
+                                    </div>
+                                    <div>
+                                        <strong>{stagedEditImageCount}/10</strong>
+                                        <span>Sorğuya yüklənmiş şəkillər</span>
+                                    </div>
+                                    <div>
+                                        <strong>
+                                            {safeSelectedFiles.length}/{maxAdditionalImages}
+                                        </strong>
+                                        <span>Yeni seçilmiş şəkillər</span>
+                                    </div>
+                                    <div>
+                                        <strong>
+                                            {uploadedEditImageCount}/{safeSelectedFiles.length}
+                                        </strong>
+                                        <span>Bu sessiyada yüklənmiş şəkillər</span>
+                                    </div>
+                                </div>
 
-                                <input
-                                    id="edit-request-images"
-                                    className="upload-file-input"
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    onChange={handleFilesChange}
-                                    disabled={carFormLoading}
-                                />
-
-                                {selectedFiles.length > 0 && (
+                                {maxAdditionalImages > 0 ? (
                                     <>
-                                        <div className="upload-stats">
-                                            <div>
-                                                <strong>{selectedFiles.length}/10</strong>
-                                                <span>Seçilmiş şəkillər</span>
-                                            </div>
+                                        <label
+                                            className="upload-zone"
+                                            htmlFor="edit-request-images"
+                                        >
+                                            <span className="upload-icon">＋</span>
+                                            <strong>Yeni şəkillər seçin</strong>
+                                            <span>JPG, PNG və digər şəkil formatları</span>
+                                            <small>
+                                                Daha {maxAdditionalImages} şəkil əlavə edə bilərsiniz
+                                            </small>
+                                        </label>
 
-                                            <div>
-                                                <strong>
-                                                    {uploadedEditImageCount}/{selectedFiles.length}
-                                                </strong>
-                                                <span>Yüklənmiş şəkillər</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="listing-preview-grid">
-                                            {selectedFiles.map((file, index) => (
-                                                <div
-                                                    className="listing-preview-item"
-                                                    key={`${file.name}-${index}`}
-                                                >
-                                                    <img
-                                                        src={URL.createObjectURL(file)}
-                                                        alt={`Yeni şəkil ${index + 1}`}
-                                                    />
-
-                                                    <span
-                                                        className={
-                                                            index < uploadedEditImageCount
-                                                                ? "uploaded"
-                                                                : ""
-                                                        }
-                                                    >
-                                                        {index < uploadedEditImageCount
-                                                            ? "✓ Yükləndi"
-                                                            : `Şəkil ${index + 1}`}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <input
+                                            id="edit-request-images"
+                                            className="upload-file-input"
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleFilesChange}
+                                            disabled={
+                                                carFormLoading ||
+                                                totalSelectedEditImages >= 10
+                                            }
+                                        />
                                     </>
+                                ) : (
+                                    <p className="listing-error">
+                                        Elan artıq maksimum 10 şəkilə malikdir.
+                                        Əlavə şəkil seçmək mümkün deyil.
+                                    </p>
+                                )}
+
+                                {safeSelectedFiles.length > 0 && (
+                                    <div className="listing-preview-grid">
+                                        {safeSelectedFiles.map((file, index) => (
+                                            <div
+                                                className="listing-preview-item"
+                                                key={`${file.name}-${index}`}
+                                            >
+                                                <img
+                                                    src={URL.createObjectURL(file)}
+                                                    alt={`Yeni şəkil ${index + 1}`}
+                                                />
+                                                <span
+                                                    className={
+                                                        index < uploadedEditImageCount
+                                                            ? "uploaded"
+                                                            : ""
+                                                    }
+                                                >
+                                                    {index < uploadedEditImageCount
+                                                        ? "✓ Yükləndi"
+                                                        : `Şəkil ${index + 1}`}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 )}
 
                                 {pendingEditRequestId && (
                                     <small>
                                         Redaktə sorğusu artıq yaradılıb.
-                                        Şəkil yükləməsi yarımçıq qalıbsa,
-                                        yenidən göndərməklə davam edə bilərsiniz.
+                                        Məlumatlar kilidlənib. Şəkil yükləməsi
+                                        yarımçıq qalıbsa, yenidən göndərməklə
+                                        davam edə bilərsiniz.
                                     </small>
                                 )}
                             </div>
@@ -603,7 +666,7 @@ function CarFormModal({
                                 {carFormLoading
                                     ? "Göndərilir..."
                                     : isEditRequest
-                                        ? pendingEditRequestId
+                                        ? isEditRequestPending
                                             ? "Şəkil yükləməsini davam etdir"
                                             : "Admin yoxlamasına göndər"
                                         : editingCarId
@@ -616,10 +679,8 @@ function CarFormModal({
                     <div className="listing-upload">
                         <div className="upload-summary">
                             <div className="upload-summary-icon">📸</div>
-
                             <div>
                                 <h3>Avtomobil şəkillərini əlavə edin</h3>
-
                                 <p>
                                     Keyfiyyətli şəkillər elanınızın daha çox
                                     diqqət çəkməsinə kömək edir.
@@ -629,10 +690,9 @@ function CarFormModal({
 
                         <div className="upload-stats">
                             <div>
-                                <strong>{selectedFiles.length}/10</strong>
+                                <strong>{safeSelectedFiles.length}/10</strong>
                                 <span>Seçilmiş şəkillər</span>
                             </div>
-
                             <div>
                                 <strong>{uploadedImageCount}/5</strong>
                                 <span>Minimum yüklənmə</span>
@@ -659,9 +719,9 @@ function CarFormModal({
                             disabled={uploading || publishing}
                         />
 
-                        {selectedFiles.length > 0 && (
+                        {safeSelectedFiles.length > 0 && (
                             <div className="listing-preview-grid">
-                                {selectedFiles.map((file, index) => (
+                                {safeSelectedFiles.map((file, index) => (
                                     <div
                                         className="listing-preview-item"
                                         key={`${file.name}-${index}`}
@@ -670,8 +730,13 @@ function CarFormModal({
                                             src={URL.createObjectURL(file)}
                                             alt={`Şəkil ${index + 1}`}
                                         />
-
-                                        <span className={index < uploadedImageCount ? "uploaded" : ""}>
+                                        <span
+                                            className={
+                                                index < uploadedImageCount
+                                                    ? "uploaded"
+                                                    : ""
+                                            }
+                                        >
                                             {index < uploadedImageCount
                                                 ? "✓ Yükləndi"
                                                 : `Şəkil ${index + 1}`}
@@ -699,7 +764,9 @@ function CarFormModal({
                         <p className="upload-progress-text">
                             {uploadedImageCount >= 5
                                 ? "Minimum şəkil sayı tamamlandı."
-                                : `Yoxlamaya göndərmək üçün daha ${5 - uploadedImageCount} şəkil yükləməlisiniz.`}
+                                : `Yoxlamaya göndərmək üçün daha ${
+                                      5 - uploadedImageCount
+                                  } şəkil yükləməlisiniz.`}
                         </p>
 
                         <div className="listing-actions">
@@ -724,12 +791,12 @@ function CarFormModal({
                                 disabled={
                                     uploading ||
                                     publishing ||
-                                    selectedFiles.length < 5 ||
-                                    uploadedImageCount >= selectedFiles.length
+                                    safeSelectedFiles.length < 5 ||
+                                    uploadedImageCount >= safeSelectedFiles.length
                                 }
                             >
                                 {uploading
-                                    ? `Yüklənir... (${uploadedImageCount}/${selectedFiles.length})`
+                                    ? `Yüklənir... (${uploadedImageCount}/${safeSelectedFiles.length})`
                                     : "Şəkilləri yüklə"}
                             </button>
                         </div>

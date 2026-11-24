@@ -1,200 +1,209 @@
 
 import { useState } from "react";
 import {
-  emptyCarForm,
-  carModels,
-  carColors,
-  phonePrefixes,
+    emptyCarForm,
+    carModels,
+    carColors,
+    phonePrefixes,
 } from "../data/carData";
 
 function useCarForm({ token, setAuthError, setAuthMode }) {
-  const [showCarForm, setShowCarForm] = useState(false);
-  const [carForm, setCarForm] = useState({ ...emptyCarForm });
-  const [editingCarId, setEditingCarId] = useState(null);
-  const [editingCarStatus, setEditingCarStatus] = useState(null);
+    const [showCarForm, setShowCarForm] = useState(false);
+    const [carForm, setCarForm] = useState({ ...emptyCarForm });
+    const [editingCarId, setEditingCarId] = useState(null);
+    const [editingCarStatus, setEditingCarStatus] = useState(null);
 
-  const [brandChoice, setBrandChoice] = useState("");
-  const [modelChoice, setModelChoice] = useState("");
-  const [colorChoice, setColorChoice] = useState("");
+    const [brandChoice, setBrandChoice] = useState("");
+    const [modelChoice, setModelChoice] = useState("");
+    const [colorChoice, setColorChoice] = useState("");
 
-  const [phonePrefix, setPhonePrefix] = useState("+99450");
-  const [phoneNumber, setPhoneNumber] = useState("");
+    const [phonePrefix, setPhonePrefix] = useState("+99450");
+    const [phoneNumber, setPhoneNumber] = useState("");
 
-  const [carFormError, setCarFormError] = useState("");
+    const [carFormError, setCarFormError] = useState("");
 
-  function resetCarForm() {
-    setCarForm({ ...emptyCarForm });
-    setBrandChoice("");
-    setModelChoice("");
-    setColorChoice("");
-    setPhonePrefix("+99450");
-    setPhoneNumber("");
-    setCarFormError("");
-    setEditingCarId(null);
-    setEditingCarStatus(null);
-  }
-
-  function openCarForm() {
-    if (!token) {
-      setAuthError("");
-      setAuthMode("login");
-      return;
+    function resetCarForm() {
+        setCarForm({ ...emptyCarForm });
+        setBrandChoice("");
+        setModelChoice("");
+        setColorChoice("");
+        setPhonePrefix("+99450");
+        setPhoneNumber("");
+        setCarFormError("");
+        setEditingCarId(null);
+        setEditingCarStatus(null);
     }
 
-    resetCarForm();
-    setShowCarForm(true);
-  }
+    function openCarForm() {
+        if (!token) {
+            setAuthError("");
+            setAuthMode("login");
+            return;
+        }
 
-  function closeCarForm() {
-    setShowCarForm(false);
-    resetCarForm();
-  }
+        resetCarForm();
+        setShowCarForm(true);
+    }
 
-  function handleBrandChange(event) {
-    const value = event.target.value;
+    function closeCarForm() {
+        setShowCarForm(false);
+        resetCarForm();
+    }
 
-    setBrandChoice(value);
-    setModelChoice("");
+    function handleBrandChange(event) {
+        const value = event.target.value;
 
-    setCarForm((previous) => ({
-      ...previous,
-      brand: value === "__OTHER__" ? "" : value,
-      model: "",
-    }));
-  }
+        setBrandChoice(value);
+        setModelChoice("");
 
-  function handleModelChange(event) {
-    const value = event.target.value;
+        setCarForm((previous) => ({
+            ...previous,
+            brand: value === "__OTHER__" ? "" : value,
+            model: "",
+        }));
+    }
 
-    setModelChoice(value);
+    function handleModelChange(event) {
+        const value = event.target.value;
 
-    setCarForm((previous) => ({
-      ...previous,
-      model: value === "__OTHER__" ? "" : value,
-    }));
-  }
+        setModelChoice(value);
 
-  function handleCarChange(event) {
-    const { name, value } = event.target;
+        setCarForm((previous) => ({
+            ...previous,
+            model: value === "__OTHER__" ? "" : value,
+        }));
+    }
 
-    setCarForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-  }
+    function handleCarChange(event) {
+        const { name, value } = event.target;
 
-  function handleColorChange(event) {
-    const value = event.target.value;
+        setCarForm((previous) => ({
+            ...previous,
+            [name]: value,
+        }));
+    }
 
-    setColorChoice(value);
+    function handleColorChange(event) {
+        const value = event.target.value;
 
-    setCarForm((previous) => ({
-      ...previous,
-      color: value === "Digər" ? "" : value,
-    }));
-  }
+        setColorChoice(value);
 
-  function handlePhonePrefixChange(event) {
-    setPhonePrefix(event.target.value);
-  }
+        setCarForm((previous) => ({
+            ...previous,
+            color: value === "Digər" ? "" : value,
+        }));
+    }
 
-  function handlePhoneNumberChange(event) {
-    const value = event.target.value.replace(/\D/g, "").slice(0, 7);
-    setPhoneNumber(value);
-  }
+    function handlePhonePrefixChange(event) {
+        setPhonePrefix(event.target.value);
+    }
 
-  function openEditForm(car) {
-    const phone = car.contactPhone || "";
+    function handlePhoneNumberChange(event) {
+        const value = event.target.value
+            .replace(/\D/g, "")
+            .slice(0, 7);
 
-    const matchedPrefix = phonePrefixes.find((prefix) =>
-      phone.startsWith(prefix.value)
-    );
+        setPhoneNumber(value);
+    }
 
-    const selectedPrefix = matchedPrefix?.value || "+99450";
+    function openEditForm(car) {
+        const phone = car.contactPhone || "";
 
-    const remainingPhone = phone.startsWith(selectedPrefix)
-      ? phone.slice(selectedPrefix.length)
-      : phone.replace(/\D/g, "").slice(-7);
+        const matchedPrefix = phonePrefixes.find((prefix) =>
+            phone.startsWith(prefix.value)
+        );
 
-    const brandExists = Object.prototype.hasOwnProperty.call(
-      carModels,
-      car.brand
-    );
+        const selectedPrefix = matchedPrefix?.value || "+99450";
 
-    const modelExists = brandExists
-      ? carModels[car.brand].includes(car.model)
-      : false;
+        const remainingPhone = phone.startsWith(selectedPrefix)
+            ? phone.slice(selectedPrefix.length)
+            : phone.replace(/\D/g, "").slice(-7);
 
-    setCarForm({
-      brand: car.brand || "",
-      model: car.model || "",
-      year: car.year || "",
-      price: car.price || "",
-      mileage: car.mileage ?? "",
-      horsePower: car.horsePower ?? "",
-      engineVolume: car.engineVolume ?? "",
-      location: car.location || "",
-      fuelType: car.fuelType || "PETROL",
-      transmission: car.transmission || "AUTOMATIC",
-      bodyType: car.bodyType || "",
-      color: car.color || "",
-      description: car.description || "",
-      contactPhone: phone,
-    });
+        const brandExists = Object.prototype.hasOwnProperty.call(
+            carModels,
+            car.brand
+        );
 
-    setBrandChoice(brandExists ? car.brand : "__OTHER__");
+        const modelExists = brandExists
+            ? carModels[car.brand].includes(car.model)
+            : false;
 
-    setModelChoice(
-      brandExists && modelExists ? car.model : "__OTHER__"
-    );
+        setCarForm({
+            brand: car.brand || "",
+            model: car.model || "",
+            year: car.year || "",
+            price: car.price ?? "",
+            mileage: car.mileage ?? "",
+            horsePower: car.horsePower ?? "",
+            engineVolume: car.engineVolume ?? "",
+            location: car.location || "",
+            fuelType: car.fuelType || "PETROL",
+            transmission: car.transmission || "AUTOMATIC",
+            bodyType: car.bodyType || "",
+            seatCount: car.seatCount || "",
+            drivetrain: car.drivetrain || "",
+            color: car.color || "",
+            description: car.description || "",
+            contactPhone: phone,
+        });
 
-    setColorChoice(
-      carColors.includes(car.color) ? car.color : "Digər"
-    );
+        setBrandChoice(brandExists ? car.brand : "__OTHER__");
 
-    setPhonePrefix(selectedPrefix);
-    setPhoneNumber(remainingPhone);
+        setModelChoice(
+            brandExists && modelExists
+                ? car.model
+                : "__OTHER__"
+        );
 
-    setEditingCarId(car.id);
-    setEditingCarStatus(car.status || null);
-    setShowCarForm(true);
-    setCarFormError("");
-  }
+        setColorChoice(
+            carColors.includes(car.color)
+                ? car.color
+                : "Digər"
+        );
 
-  return {
-    showCarForm,
-    setShowCarForm,
+        setPhonePrefix(selectedPrefix);
+        setPhoneNumber(remainingPhone);
 
-    carForm,
-    setCarForm,
+        setEditingCarId(car.id);
+        setEditingCarStatus(car.status || null);
+        setShowCarForm(true);
+        setCarFormError("");
+    }
 
-    editingCarId,
-    setEditingCarId,
-    editingCarStatus,
+    return {
+        showCarForm,
+        setShowCarForm,
 
-    brandChoice,
-    modelChoice,
-    colorChoice,
+        carForm,
+        setCarForm,
 
-    phonePrefix,
-    phoneNumber,
+        editingCarId,
+        setEditingCarId,
+        editingCarStatus,
 
-    carFormError,
-    setCarFormError,
+        brandChoice,
+        modelChoice,
+        colorChoice,
 
-    resetCarForm,
-    openCarForm,
-    closeCarForm,
+        phonePrefix,
+        phoneNumber,
 
-    handleBrandChange,
-    handleModelChange,
-    handleCarChange,
-    handleColorChange,
-    handlePhonePrefixChange,
-    handlePhoneNumberChange,
+        carFormError,
+        setCarFormError,
 
-    openEditForm,
-  };
+        resetCarForm,
+        openCarForm,
+        closeCarForm,
+
+        handleBrandChange,
+        handleModelChange,
+        handleCarChange,
+        handleColorChange,
+        handlePhonePrefixChange,
+        handlePhoneNumberChange,
+
+        openEditForm,
+    };
 }
 
 export default useCarForm;
