@@ -19,35 +19,38 @@ import java.util.List;
 public class CarResponse {
 
     private Long id;
+
     private String brand;
     private String model;
     private Integer year;
+
     private BigDecimal price;
     private Long mileage;
 
-    // Mühərrik gücü (at gücü)
+    // Mühərrik gücü
     private Integer horsePower;
 
-    // Mühərrikin həcmi (L)
+    // Mühərrikin həcmi
     private BigDecimal engineVolume;
 
     private FuelType fuelType;
     private Transmission transmission;
     private BodyType bodyType;
     private SeatCount seatCount;
-
     private Drivetrain drivetrain;
+
     private String color;
     private String description;
     private String ownerName;
     private String contactPhone;
-
-    // Avtomobilin yerləşdiyi yer
     private String location;
 
-    // Elanın yaradılma tarixi
     private LocalDateTime createdAt;
 
     private CarStatus status;
+
+    // Admin tərəfindən rədd edilmə səbəbi
+    private String rejectionReason;
+
     private List<String> imageUrls;
 }

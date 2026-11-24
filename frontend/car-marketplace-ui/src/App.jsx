@@ -114,6 +114,8 @@ function App() {
     const [carFormLoading, setCarFormLoading] = useState(false);
 
     const [draftCarId, setDraftCarId] = useState(null);
+    const [pendingEditRequestId, setPendingEditRequestId] = useState(null);
+    const [uploadedEditImageCount, setUploadedEditImageCount] = useState(0);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [uploadedImageCount, setUploadedImageCount] = useState(0);
     const [uploading, setUploading] = useState(false);
@@ -124,6 +126,7 @@ function App() {
         showCarForm,
         carForm,
         editingCarId,
+        editingCarStatus,
 
         brands,
         carModels,
@@ -212,6 +215,8 @@ function App() {
         setUploadedImageCount(0);
         setImageError("");
         setCarFormLoading(false);
+        setPendingEditRequestId(null);
+        setUploadedEditImageCount(0);
     }
 
     function openCarForm() {
@@ -239,6 +244,8 @@ function App() {
         setDraftCarId(null);
         setSelectedFiles([]);
         setUploadedImageCount(0);
+        setPendingEditRequestId(null);
+        setUploadedEditImageCount(0);
         setImageError("");
         setCarFormError("");
         setCarFormLoading(false);
@@ -392,6 +399,9 @@ function App() {
         phonePrefix,
         phoneNumber,
         editingCarId,
+        editingCarStatus,
+        pendingEditRequestId,
+        uploadedEditImageCount,
         draftCarId,
         selectedFiles,
         uploadedImageCount,
@@ -537,6 +547,9 @@ function App() {
                         showCarForm={showCarForm}
                         closeCarForm={closeCarForm}
                         editingCarId={editingCarId}
+                        editingCarStatus={editingCarStatus}
+                        pendingEditRequestId={pendingEditRequestId}
+                        uploadedEditImageCount={uploadedEditImageCount}
                         draftCarId={draftCarId}
                         setDraftCarId={setDraftCarId}
                         brands={brands}

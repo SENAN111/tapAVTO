@@ -26,4 +26,10 @@ public class CarCatalogController {
     public List<String> getModelsByMake(@RequestParam String make) {
         return carCatalogService.getModelsByMake(make);
     }
+    @GetMapping("/generations")
+    public List<String> getGenerationsByMakeAndModel(
+            @RequestParam String make,
+            @RequestParam String model) {
+        return carCatalogService.getGenerationsByMakeAndModel(make, model);
+    }
 }

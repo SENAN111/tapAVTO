@@ -7,9 +7,12 @@ function useCarActions({
   phonePrefix,
   phoneNumber,
   editingCarId,
+  editingCarStatus,
   draftCarId,
   selectedFiles,
   uploadedImageCount,
+  pendingEditRequestId,
+  uploadedEditImageCount,
   currentPath,
 
   setCarFormLoading,
@@ -18,6 +21,8 @@ function useCarActions({
   setImageError,
   setSelectedFiles,
   setUploadedImageCount,
+  setPendingEditRequestId,
+  setUploadedEditImageCount,
   setUploading,
   setPublishing,
   setMyCars,
@@ -37,9 +42,7 @@ function useCarActions({
       setCarFormError("");
 
       if (phoneNumber.length !== 7) {
-        throw new Error(
-          "Telefon nömrəsinin son 7 rəqəmini daxil edin."
-        );
+        throw new Error("Telefon nömrəsinin son 7 rəqəmini daxil edin.");
       }
 
       const fullPhoneNumber = `${phonePrefix}${phoneNumber}`;
@@ -106,7 +109,7 @@ function useCarActions({
         )
       ) {
         throw new Error(
-          "Mühərrikin həcmini 0.1-99.9 L aralığında, məsələn 2.0 daxil edin."
+          "Mühərrikin həcmini 0.1-99.9 L aralığında daxil edin."
         );
       }
 
@@ -133,10 +136,94 @@ function useCarActions({
         contactPhone: fullPhoneNumber,
       };
 
+      const requiresAdminReview =
+        editingCarId &&
+        ["APPROVED", "PUBLISHED"].includes(editingCarStatus);
+
+      // Təsdiqlənmiş elan üçün redaktə sorğusu
+      if (requiresAdminReview) {
+        let requestId = pendingEditRequestId;
+
+        // Sorğu əvvəl yaradılmayıbsa, bir dəfə yaradırıq
+        if (!requestId) {
+          const response = await fetch(
+            `${API_URL}/${editingCarId}/edit-request`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(payload),
+            }
+          );
+
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            throw new Error(
+              data.message ||
+                data.error ||
+                "Redaktə sorğusu yaratmaq mümkün olmadı."
+            );
+          }
+
+          if (!data.id) {
+            throw new Error(
+              "Server redaktə sorğusunun ID-sini qaytarmadı."
+            );
+          }
+
+          requestId = data.id;
+          setPendingEditRequestId(requestId);
+        }
+
+        // Seçilmiş şəkilləri sorğuya ardıcıl yükləyirik
+        for (
+          let i = uploadedEditImageCount;
+          i < selectedFiles.length;
+          i++
+        ) {
+          const formData = new FormData();
+          formData.append("file", selectedFiles[i]);
+
+          const response = await fetch(
+            `${API_URL}/edit-requests/${requestId}/images`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              body: formData,
+            }
+          );
+
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            throw new Error(
+              data.message ||
+                data.error ||
+                `${i + 1}-ci şəkli yükləmək mümkün olmadı.`
+            );
+          }
+
+          setUploadedEditImageCount(i + 1);
+        }
+
+        alert(
+          "Dəyişiklik sorğunuz admin yoxlamasına göndərildi."
+        );
+
+        closeCarForm();
+        await loadMyCars(token);
+        await loadCars();
+        return;
+      }
+
+      // Qaralama və rədd edilmiş elanlar əvvəlki kimi yenilənir
       const response = await fetch(
-        editingCarId
-          ? `${API_URL}/${editingCarId}`
-          : API_URL,
+        editingCarId ? `${API_URL}/${editingCarId}` : API_URL,
         {
           method: editingCarId ? "PUT" : "POST",
           headers: {

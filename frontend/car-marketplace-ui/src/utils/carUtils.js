@@ -48,19 +48,27 @@ export function getCategory(car) {
 }
 
 export function getCarStatus(car) {
-  return car.status || car.carStatus || "UNKNOWN";
+  return car?.status || car?.carStatus || "UNKNOWN";
 }
 
 export function getStatusLabel(car) {
-  const status = getCarStatus(car);
+  const status =
+    typeof car === "string" ? car : getCarStatus(car);
 
-  if (status === "PUBLISHED") return "Dərc edilib";
-  if (status === "DRAFT") return "Qaralama";
+  const statuses = {
+    DRAFT: "Qaralama",
+    PENDING: "Admin yoxlamasında",
+    APPROVED: "Təsdiqlənib",
+    REJECTED: "Rədd edilib",
+    PUBLISHED: "Dərc edilib",
+    DELETED: "Silinib",
+    UNKNOWN: "Status məlum deyil",
+  };
 
-  return "Status məlum deyil";
+  return statuses[status] || "Status məlum deyil";
 }
 
-export function getPrimaryImage(car, carImages) {
+export function getPrimaryImage(car, carImages = {}) {
   const images = carImages[car.id] || [];
 
   const primary = images.find(

@@ -9,8 +9,6 @@ import com.carmarketplace.entity.User;
 import com.carmarketplace.entity.enums.CarStatus;
 import com.carmarketplace.entity.enums.FuelType;
 import com.carmarketplace.entity.enums.Transmission;
-import com.carmarketplace.entity.enums.SeatCount;
-import com.carmarketplace.entity.enums.Drivetrain;
 import com.carmarketplace.repository.CarRepository;
 import com.carmarketplace.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,13 +33,26 @@ public class CarService {
     private final CarRepository carRepository;
     private final UserRepository userRepository;
     private final CarImageService carImageService;
+    private final NotificationService notificationService;
 
-    // Daxil olmuş istifadəçinin email ünvanını əldə etmək
+    // Daxil olmuş istifadəçinin email ünvanı
     private String getCurrentUserEmail() {
         return SecurityContextHolder
                 .getContext()
                 .getAuthentication()
                 .getName();
+    }
+
+    // Hazırkı istifadəçinin admin olub-olmadığını yoxlamaq
+    private boolean isCurrentUserAdmin() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        return authentication != null
+                && authentication.getAuthorities()
+                .stream()
+                .anyMatch(authority ->
+                        authority.getAuthority().equals("ROLE_ADMIN"));
     }
 
     // Avtomobil yaratmaq
@@ -59,16 +71,20 @@ public class CarService {
         return mapToResponse(savedCar);
     }
 
-    // Bütün dərc edilmiş avtomobilləri göstərmək
+    // Təsdiqlənmiş avtomobilləri göstərmək
+    @Transactional(readOnly = true)
     public List<CarResponse> getAllCars() {
 
-        return carRepository.findAllByStatus(CarStatus.PUBLISHED)
+        return carRepository.findAllByStatusIn(
+                        List.of(CarStatus.APPROVED, CarStatus.PUBLISHED)
+                )
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
 
     // İstifadəçinin öz elanlarını göstərmək
+    @Transactional(readOnly = true)
     public List<CarResponse> getMyCars() {
 
         String email = getCurrentUserEmail();
@@ -80,6 +96,7 @@ public class CarService {
     }
 
     // Avtomobilləri filter və axtarış etmək
+    @Transactional(readOnly = true)
     public Page<CarResponse> searchCars(
             String brand,
             String model,
@@ -105,7 +122,7 @@ public class CarService {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return carRepository.searchCars(
-                        CarStatus.PUBLISHED,
+                        CarStatus.APPROVED,
                         brand,
                         model,
                         minPrice,
@@ -120,12 +137,39 @@ public class CarService {
     }
 
     // ID ilə avtomobil tapmaq
+    // Təsdiqlənməmiş elanları yalnız sahibi və admin görə bilər
+    @Transactional(readOnly = true)
     public CarResponse getCarById(Long id) {
 
-        return mapToResponse(findCarById(id));
+        Car car = findCarById(id);
+
+        boolean isPublic =
+                car.getStatus() == CarStatus.APPROVED
+                        || car.getStatus() == CarStatus.PUBLISHED;
+
+        if (!isPublic) {
+
+            Authentication authentication =
+                    SecurityContextHolder
+                            .getContext()
+                            .getAuthentication();
+
+            boolean isAuthenticated =
+                    authentication != null
+                            && authentication.isAuthenticated()
+                            && !"anonymousUser".equals(authentication.getName());
+
+            if (!isAuthenticated) {
+                throw new ResourceNotFoundException("Car not found");
+            }
+
+            checkOwnershipOrAdmin(car);
+        }
+
+        return mapToResponse(car);
     }
 
-    // Elanı dərc etmək
+    // Elanı admin yoxlamasına göndərmək
     public CarResponse publishCar(Long id) {
 
         Car car = findCarById(id);
@@ -134,25 +178,52 @@ public class CarService {
 
         if (car.getBodyType() == null) {
             throw new IllegalStateException(
-                    "Elanı dərc etmək üçün ban növü seçilməlidir"
+                    "Elanı yoxlamaya göndərmək üçün ban növü seçilməlidir"
+            );
+        }
+
+        if (car.getStatus() == CarStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Bu elan artıq admin yoxlamasındadır"
+            );
+        }
+
+        if (car.getStatus() == CarStatus.DELETED) {
+            throw new IllegalStateException(
+                    "Silinmiş elanı yoxlamaya göndərmək mümkün deyil"
             );
         }
 
         carImageService.validateMinimumImages(id);
 
-        car.setStatus(CarStatus.PUBLISHED);
+        car.setStatus(CarStatus.PENDING);
+        car.setRejectionReason(null);
 
         Car savedCar = carRepository.save(car);
+
+        // Adminlərə yeni elan haqqında bildiriş göndər
+        notificationService.notifyAdmins(
+                "Yeni elan yoxlama gözləyir",
+                car.getOwner().getFirstName() + " "
+                        + car.getOwner().getLastName()
+                        + " yeni elan yerləşdirdi: "
+                        + car.getBrand() + " " + car.getModel()
+                        + ". Elanı yoxlamaq üçün admin panelinə daxil olun.",
+                car.getId()
+        );
 
         return mapToResponse(savedCar);
     }
 
     // Avtomobili silmək
     public void deleteCar(Long id) {
+
         Car car = findCarById(id);
+
         checkOwnershipOrAdmin(car);
 
         car.setStatus(CarStatus.DELETED);
+
         carRepository.save(car);
     }
 
@@ -162,6 +233,31 @@ public class CarService {
         Car existingCar = findCarById(id);
 
         checkOwnershipOrAdmin(existingCar);
+
+        if (existingCar.getStatus() == CarStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Admin yoxlamasında olan elanı redaktə etmək mümkün deyil"
+            );
+        }
+
+        if (existingCar.getStatus() == CarStatus.DELETED) {
+            throw new IllegalStateException(
+                    "Silinmiş elanı redaktə etmək mümkün deyil"
+            );
+        }
+
+        // Satıcı təsdiqlənmiş elanı birbaşa dəyişə bilməz.
+        // Redaktə sorğusu üçün POST /api/cars/{id}/edit-request istifadə edilməlidir.
+        boolean isApproved =
+                existingCar.getStatus() == CarStatus.APPROVED
+                        || existingCar.getStatus() == CarStatus.PUBLISHED;
+
+        if (isApproved && !isCurrentUserAdmin()) {
+            throw new IllegalStateException(
+                    "Təsdiqlənmiş elanı birbaşa redaktə etmək mümkün deyil. "
+                            + "Redaktə sorğusu göndərin."
+            );
+        }
 
         existingCar.setBrand(request.getBrand());
         existingCar.setModel(request.getModel());
@@ -182,15 +278,19 @@ public class CarService {
         existingCar.setDescription(request.getDescription());
         existingCar.setContactPhone(request.getContactPhone());
 
+        // Adminin redaktəsi zamanı təsdiqlənmiş status saxlanılır.
+        // DRAFT və REJECTED elanların statusu da dəyişdirilmir.
+
         return carRepository.save(existingCar);
     }
 
-    // Sahiblik və Admin yoxlaması
+    // Sahiblik və admin yoxlaması
     private void checkOwnershipOrAdmin(Car car) {
 
-        var authentication = SecurityContextHolder
-                .getContext()
-                .getAuthentication();
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
 
         String currentEmail = authentication.getName();
 
@@ -273,6 +373,7 @@ public class CarService {
         response.setContactPhone(car.getContactPhone());
 
         response.setStatus(car.getStatus());
+        response.setRejectionReason(car.getRejectionReason());
 
         response.setImageUrls(
                 car.getImages()

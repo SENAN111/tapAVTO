@@ -1,10 +1,12 @@
 
 package com.carmarketplace.controller;
 
+import com.carmarketplace.dto.CarEditRequestResponse;
 import com.carmarketplace.dto.CarRequest;
 import com.carmarketplace.dto.CarResponse;
 import com.carmarketplace.entity.enums.FuelType;
 import com.carmarketplace.entity.enums.Transmission;
+import com.carmarketplace.service.CarEditRequestService;
 import com.carmarketplace.service.CarService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import java.util.List;
 public class CarController {
 
     private final CarService carService;
+    private final CarEditRequestService carEditRequestService;
 
     // Avtomobil yaratmaq
     @PostMapping
@@ -32,7 +35,7 @@ public class CarController {
                 .body(carService.createCar(request));
     }
 
-    // Bütün dərc edilmiş avtomobilləri göstərmək
+    // Təsdiqlənmiş avtomobilləri göstərmək
     @GetMapping
     public ResponseEntity<List<CarResponse>> getAllCars() {
 
@@ -44,6 +47,15 @@ public class CarController {
     public ResponseEntity<List<CarResponse>> getMyCars() {
 
         return ResponseEntity.ok(carService.getMyCars());
+    }
+
+    // Satıcının öz redaktə sorğularını göstərmək
+    @GetMapping("/my-edit-requests")
+    public ResponseEntity<List<CarEditRequestResponse>> getMyEditRequests() {
+
+        return ResponseEntity.ok(
+                carEditRequestService.getMyRequests()
+        );
     }
 
     // Avtomobilləri axtarmaq və filter etmək
@@ -89,12 +101,24 @@ public class CarController {
         return ResponseEntity.ok(carService.getCarById(id));
     }
 
-    // Elanı dərc etmək
+    // Elanı admin yoxlamasına göndərmək
     @PostMapping("/{id}/publish")
     public ResponseEntity<CarResponse> publishCar(
             @PathVariable Long id) {
 
         return ResponseEntity.ok(carService.publishCar(id));
+    }
+
+    // Təsdiqlənmiş elan üçün redaktə sorğusu göndərmək
+    @PostMapping("/{id}/edit-request")
+    public ResponseEntity<CarEditRequestResponse> submitEditRequest(
+            @PathVariable Long id,
+            @Valid @RequestBody CarRequest request) {
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(
+                        carEditRequestService.submitEditRequest(id, request)
+                );
     }
 
     // Avtomobili yeniləmək

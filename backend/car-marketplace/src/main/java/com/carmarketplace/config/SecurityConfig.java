@@ -47,6 +47,7 @@ public class SecurityConfig {
     // Frontend üçün CORS icazələri
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(
@@ -54,7 +55,14 @@ public class SecurityConfig {
         );
 
         configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "PATCH",
+                        "DELETE",
+                        "OPTIONS"
+                )
         );
 
         configuration.setAllowedHeaders(List.of("*"));
@@ -73,49 +81,109 @@ public class SecurityConfig {
             throws Exception {
 
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors ->
+                        cors.configurationSource(corsConfigurationSource())
+                )
 
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/catalog/**").permitAll()
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/api/cars/**")
+                        // OPTIONS sorğuları
+                        .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
 
-                        .requestMatchers(HttpMethod.POST, "/api/cars/**")
+                        // Authentication
+                        .requestMatchers("/api/auth/**")
+                        .permitAll()
+
+                        // Admin endpoint-ləri yalnız ADMIN üçün
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
+
+                        // Şəxsi elanlar
+                        .requestMatchers(HttpMethod.GET, "/api/cars/my-cars")
                         .hasAnyRole("SELLER", "ADMIN")
 
-                        .requestMatchers(HttpMethod.PUT, "/api/cars/**")
-                        .hasAnyRole("SELLER", "ADMIN")
+                        // Şəxsi bildirişlər
+                        .requestMatchers("/api/notifications/**")
+                        .authenticated()
 
-                        .requestMatchers(HttpMethod.DELETE, "/api/cars/**")
-                        .hasAnyRole("SELLER", "ADMIN")
+                        // Kataloq
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/catalog/**"
+                        ).permitAll()
 
+                        // İctimai avtomobil siyahısı və axtarış
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/cars/**"
+                        ).permitAll()
+
+                        // Avtomobil yaratmaq
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/cars/**"
+                        ).hasAnyRole("SELLER", "ADMIN")
+
+                        // Avtomobili redaktə etmək
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/cars/**"
+                        ).hasAnyRole("SELLER", "ADMIN")
+
+                        // Avtomobili yeniləmək və təsdiqləmə əməliyyatları
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/cars/**"
+                        ).hasAnyRole("SELLER", "ADMIN")
+
+                        // Avtomobili silmək
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/cars/**"
+                        ).hasAnyRole("SELLER", "ADMIN")
+
+                        // Digər bütün endpoint-lər autentifikasiya tələb edir
                         .anyRequest().authenticated()
                 )
 
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType("application/json");
-                            response.getWriter().write(
-                                    "{\"status\":401,\"message\":\"Unauthorized\"}"
-                            );
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.setContentType("application/json");
-                            response.getWriter().write(
-                                    "{\"status\":403,\"message\":\"Forbidden\"}"
-                            );
-                        })
+
+                        .authenticationEntryPoint(
+                                (request, response, authException) -> {
+                                    response.setStatus(
+                                            HttpServletResponse.SC_UNAUTHORIZED
+                                    );
+                                    response.setContentType("application/json");
+                                    response.setCharacterEncoding("UTF-8");
+
+                                    response.getWriter().write(
+                                            "{\"status\":401,\"message\":\"Unauthorized\"}"
+                                    );
+                                }
+                        )
+
+                        .accessDeniedHandler(
+                                (request, response, accessDeniedException) -> {
+                                    response.setStatus(
+                                            HttpServletResponse.SC_FORBIDDEN
+                                    );
+                                    response.setContentType("application/json");
+                                    response.setCharacterEncoding("UTF-8");
+
+                                    response.getWriter().write(
+                                            "{\"status\":403,\"message\":\"Forbidden\"}"
+                                    );
+                                }
+                        )
                 )
 
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
                 )
 
                 .addFilterBefore(

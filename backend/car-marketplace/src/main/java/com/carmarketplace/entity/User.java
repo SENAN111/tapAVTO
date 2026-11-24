@@ -1,9 +1,11 @@
+
 package com.carmarketplace.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,6 +31,11 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+    @Column
+    private LocalDateTime lastLoginAt;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -36,4 +43,12 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+
+    @PrePersist
+    public void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+
+    }
 }

@@ -23,4 +23,7 @@ public class CarCatalogService {
     public List<String> getModelsByMake(String make) {
         return carCatalogRepository.findModelsByMake(make);
     }
+    public List<String> getGenerationsByMakeAndModel(String make, String model) {
+        return carCatalogRepository.findGenerationsByMakeAndModel(make, model);
+    }
 }

@@ -11,6 +11,7 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
   const [showCarForm, setShowCarForm] = useState(false);
   const [carForm, setCarForm] = useState({ ...emptyCarForm });
   const [editingCarId, setEditingCarId] = useState(null);
+  const [editingCarStatus, setEditingCarStatus] = useState(null);
 
   const [brandChoice, setBrandChoice] = useState("");
   const [modelChoice, setModelChoice] = useState("");
@@ -30,6 +31,7 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
     setPhoneNumber("");
     setCarFormError("");
     setEditingCarId(null);
+    setEditingCarStatus(null);
   }
 
   function openCarForm() {
@@ -154,6 +156,7 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
     setPhoneNumber(remainingPhone);
 
     setEditingCarId(car.id);
+    setEditingCarStatus(car.status || null);
     setShowCarForm(true);
     setCarFormError("");
   }
@@ -167,6 +170,7 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
 
     editingCarId,
     setEditingCarId,
+    editingCarStatus,
 
     brandChoice,
     modelChoice,

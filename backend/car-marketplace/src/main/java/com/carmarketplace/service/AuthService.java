@@ -1,3 +1,4 @@
+
 package com.carmarketplace.service;
 
 import com.carmarketplace.dto.RegisterRequest;
@@ -7,6 +8,9 @@ import com.carmarketplace.security.JwtService;
 import com.carmarketplace.common.exception.InvalidCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 public class AuthService {
@@ -40,15 +44,24 @@ public class AuthService {
         return userService.register(user, request.getRole());
     }
 
+    @Transactional
     public String login(String email, String password) {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new InvalidCredentialsException("Invalid email or password"));
+                        new InvalidCredentialsException(
+                                "Invalid email or password"
+                        ));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new InvalidCredentialsException("Invalid email or password");
+            throw new InvalidCredentialsException(
+                    "Invalid email or password"
+            );
         }
+
+        // Son uğurlu giriş vaxtını qeydə alırıq
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
 
         return jwtService.generateToken(
                 user.getEmail(),
