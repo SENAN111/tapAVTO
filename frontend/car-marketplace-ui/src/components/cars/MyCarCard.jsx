@@ -11,13 +11,22 @@ import {
 const MyCarCard = ({
     car,
     carImages,
+    editRequests = [],
+    editRequestsLoading = false,
     openEditForm,
     openCarDetails,
     handleDeleteCar
 }) => {
-
     const status = car.status || getCarStatus(car);
     const statusLabel = getStatusLabel(status);
+
+    const pendingEditRequest = editRequests.find(
+        (request) => request.status === "PENDING"
+    );
+
+    const rejectedEditRequest = editRequests.find(
+        (request) => request.status === "REJECTED"
+    );
 
     const getStatusClass = () => {
         switch (status) {
@@ -34,6 +43,9 @@ const MyCarCard = ({
             case "DRAFT":
                 return "status-draft";
 
+            case "DELETED":
+                return "status-deleted";
+
             default:
                 return "status-unknown";
         }
@@ -42,13 +54,12 @@ const MyCarCard = ({
     const image = getPrimaryImage(car, carImages);
 
     const handleDelete = () => {
-        const confirmed = window.confirm(
-            "Bu elanı silmək istədiyinizə əminsiniz?"
-        );
-
-        if (confirmed) {
-            handleDeleteCar(car.id);
+        if (!car || !car.id) {
+            alert("Avtomobil məlumatları və ya ID-si tapılmadı.");
+            return;
         }
+
+        handleDeleteCar(car);
     };
 
     return (
@@ -104,11 +115,33 @@ const MyCarCard = ({
                     </div>
                 )}
 
-                {status === "APPROVED" || status === "PUBLISHED" ? (
+                {(status === "APPROVED" || status === "PUBLISHED") && (
                     <div className="approved-message">
                         Elanınız təsdiqlənib və saytda yayımlanıb.
                     </div>
-                ) : null}
+                )}
+
+                {pendingEditRequest && (
+                    <div className="pending-message">
+                        <strong>Redaktə sorğusu göndərilib.</strong>
+                        <p>Redaktə etdiyiniz məlumatlar admin yoxlamasındadır.</p>
+                    </div>
+                )}
+
+                {rejectedEditRequest && !pendingEditRequest && (
+                    <div className="rejection-reason">
+                        <strong>Redaktə sorğusu rədd edilib.</strong>
+                        {rejectedEditRequest.rejectionReason && (
+                            <p>{rejectedEditRequest.rejectionReason}</p>
+                        )}
+                    </div>
+                )}
+
+                {editRequestsLoading && (
+                    <div className="pending-message">
+                        Redaktə sorğuları yüklənir...
+                    </div>
+                )}
 
                 <div className="my-car-actions">
 
@@ -116,7 +149,11 @@ const MyCarCard = ({
                         type="button"
                         className="edit-button"
                         onClick={() => openEditForm(car)}
-                        disabled={status === "PENDING"}
+                        disabled={
+                            status === "PENDING" ||
+                            status === "DELETED" ||
+                            Boolean(pendingEditRequest)
+                        }
                     >
                         Redaktə et
                     </button>
@@ -133,6 +170,7 @@ const MyCarCard = ({
                         type="button"
                         className="delete-button"
                         onClick={handleDelete}
+                        disabled={status === "DELETED"}
                     >
                         Sil
                     </button>

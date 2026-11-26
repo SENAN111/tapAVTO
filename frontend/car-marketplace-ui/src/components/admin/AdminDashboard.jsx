@@ -3,7 +3,12 @@ import { useCallback, useEffect, useState } from "react";
 import { API_URL } from "../../data/carData";
 import "../../styles/AdminDashboard.css";
 
-function AdminDashboard({ token, navigate, selectedCarId }) {
+function AdminDashboard({
+    token,
+    navigate,
+    selectedCarId,
+    onCarsUpdated,
+}) {
     const API_BASE_URL = API_URL.replace(/\/cars\/?$/, "");
 
     const [statistics, setStatistics] = useState({
@@ -17,7 +22,6 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
 
     const [pendingCars, setPendingCars] = useState([]);
     const [editRequests, setEditRequests] = useState([]);
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [actionLoading, setActionLoading] = useState(null);
@@ -27,18 +31,22 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
     const [rejectReason, setRejectReason] = useState("");
     const [rejectError, setRejectError] = useState("");
 
-    // Redaktə sorğularının idarə edilməsi
     const [selectedEditRequest, setSelectedEditRequest] = useState(null);
+    const [approveEditModal, setApproveEditModal] = useState(null);
     const [editRejectReason, setEditRejectReason] = useState("");
     const [editRejectError, setEditRejectError] = useState("");
     const [editActionLoading, setEditActionLoading] = useState(null);
+
+    // Şəkil görüntüləyicisinin state-ləri
+    const [viewerImages, setViewerImages] = useState([]);
+    const [viewerIndex, setViewerIndex] = useState(0);
+    const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
     const authHeaders = {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
     };
 
-    // Dashboard məlumatlarını yüklə
     const loadDashboard = useCallback(async () => {
         try {
             setLoading(true);
@@ -60,17 +68,9 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                 }),
             ]);
 
-            const statisticsData = await statisticsResponse
-                .json()
-                .catch(() => ({}));
-
-            const pendingData = await pendingResponse
-                .json()
-                .catch(() => []);
-
-            const editRequestsData = await editRequestsResponse
-                .json()
-                .catch(() => []);
+            const statisticsData = await statisticsResponse.json().catch(() => ({}));
+            const pendingData = await pendingResponse.json().catch(() => []);
+            const editRequestsData = await editRequestsResponse.json().catch(() => []);
 
             if (!statisticsResponse.ok) {
                 throw new Error(
@@ -101,14 +101,9 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                 ...statisticsData,
             }));
 
-            setPendingCars(
-                Array.isArray(pendingData) ? pendingData : []
-            );
-
+            setPendingCars(Array.isArray(pendingData) ? pendingData : []);
             setEditRequests(
-                Array.isArray(editRequestsData)
-                    ? editRequestsData
-                    : []
+                Array.isArray(editRequestsData) ? editRequestsData : []
             );
         } catch (err) {
             setError(err.message);
@@ -121,7 +116,6 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
         loadDashboard();
     }, [loadDashboard]);
 
-    // Bildirişdən gələn elana avtomatik keçid
     useEffect(() => {
         if (!selectedCarId || loading) return;
 
@@ -137,7 +131,121 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
         }
     }, [selectedCarId, loading, pendingCars]);
 
-    // Elan təsdiqləmə modalı
+    const selectedCar = pendingCars.find(
+        (car) => String(car.id) === String(selectedCarId)
+    );
+
+    const selectedCarImages = selectedCar
+        ? (
+            selectedCar.imageUrls ||
+            selectedCar.images?.map((image) =>
+                typeof image === "string" ? image : image?.imageUrl
+            ) ||
+            []
+        ).filter(Boolean)
+        : [];
+
+    // Şəkil görüntüləyicisini aç
+    function openImageViewer(images, index = 0) {
+        const validImages = (Array.isArray(images) ? images : [])
+            .map((image) =>
+                typeof image === "string" ? image : image?.imageUrl
+            )
+            .filter(Boolean);
+
+        if (validImages.length === 0) return;
+
+        setViewerImages(validImages);
+        setViewerIndex(index);
+        setIsImageViewerOpen(true);
+    }
+
+    // Şəkil görüntüləyicisini bağla
+    function closeImageViewer() {
+        setIsImageViewerOpen(false);
+        setViewerImages([]);
+        setViewerIndex(0);
+    }
+
+    // Növbəti şəkil
+    function showNextImage() {
+        setViewerIndex((previous) =>
+            (previous + 1) % viewerImages.length
+        );
+    }
+
+    // Əvvəlki şəkil
+    function showPreviousImage() {
+        setViewerIndex((previous) =>
+            (previous - 1 + viewerImages.length) % viewerImages.length
+        );
+    }
+
+    // Klaviatura ilə şəkilləri idarə et
+    useEffect(() => {
+        if (!isImageViewerOpen) return;
+
+        function handleImageViewerKeyDown(event) {
+            if (event.key === "Escape") {
+                closeImageViewer();
+            } else if (event.key === "ArrowRight") {
+                event.preventDefault();
+                showNextImage();
+            } else if (event.key === "ArrowLeft") {
+                event.preventDefault();
+                showPreviousImage();
+            }
+        }
+
+        window.addEventListener("keydown", handleImageViewerKeyDown);
+
+        document.body.style.overflow = "hidden";
+
+        return () => {
+            window.removeEventListener("keydown", handleImageViewerKeyDown);
+            document.body.style.overflow = "";
+        };
+    }, [isImageViewerOpen, viewerImages.length]);
+
+    function formatDate(value) {
+        if (!value) return "Tarix göstərilməyib";
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return "Tarix göstərilməyib";
+        }
+
+        return date.toLocaleString("az-AZ");
+    }
+
+    function formatPrice(value) {
+        if (value === null || value === undefined || value === "") {
+            return "—";
+        }
+
+        return `${Number(value).toLocaleString("az-AZ")} AZN`;
+    }
+
+    function formatValue(value, suffix = "") {
+        if (value === null || value === undefined || value === "") {
+            return "—";
+        }
+
+        return `${value}${suffix}`;
+    }
+
+    function formatEnum(value) {
+        if (!value) return "—";
+
+        return String(value)
+            .replaceAll("_", " ")
+            .toLocaleLowerCase("az-AZ")
+            .replace(/^./, (character) =>
+                character.toLocaleUpperCase("az-AZ")
+            );
+    }
+
     function openApproveModal(car) {
         setApproveModalCar(car);
     }
@@ -175,9 +283,15 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
             }
 
             setApproveModalCar(null);
-            alert("Elan uğurla təsdiqləndi.");
 
-            await loadDashboard();
+            await Promise.all([
+                loadDashboard(),
+                onCarsUpdated?.(),
+            ]);
+
+            if (selectedCarId) {
+                navigate("/admin");
+            }
         } catch (err) {
             setError(err.message);
         } finally {
@@ -185,7 +299,6 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
         }
     }
 
-    // Elan rədd etmə modalı
     function openRejectModal(car) {
         setRejectModalCar(car);
         setRejectReason("");
@@ -204,13 +317,6 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
         if (!rejectModalCar) return;
 
         const trimmedReason = rejectReason.trim();
-
-        if (!trimmedReason) {
-            setRejectError(
-                "Zəhmət olmasa, rədd edilmə səbəbini qeyd edin."
-            );
-            return;
-        }
 
         if (trimmedReason.length < 5) {
             setRejectError(
@@ -248,9 +354,14 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
             setRejectReason("");
             setRejectError("");
 
-            alert("Elan rədd edildi.");
+            await Promise.all([
+                loadDashboard(),
+                onCarsUpdated?.(),
+            ]);
 
-            await loadDashboard();
+            if (selectedCarId) {
+                navigate("/admin");
+            }
         } catch (err) {
             setRejectError(err.message);
         } finally {
@@ -258,15 +369,10 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
         }
     }
 
-    // Redaktə sorğusunu təsdiqlə
-    async function handleApproveEdit(request) {
-        if (!request) return;
+    async function handleApproveEdit() {
+        if (!approveEditModal) return;
 
-        const confirmed = window.confirm(
-            `${request.brand} ${request.model} redaktəsini təsdiqləmək istəyirsiniz?`
-        );
-
-        if (!confirmed) return;
+        const request = approveEditModal;
 
         try {
             setEditActionLoading(request.id);
@@ -290,11 +396,13 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                 );
             }
 
+            setApproveEditModal(null);
             setSelectedEditRequest(null);
 
-            alert("Elan redaktəsi təsdiqləndi. Satıcıya bildiriş göndərildi.");
-
-            await loadDashboard();
+            await Promise.all([
+                loadDashboard(),
+                onCarsUpdated?.(),
+            ]);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -302,30 +410,18 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
         }
     }
 
-    // Redaktə sorğusunu rədd et
     async function handleRejectEdit(request) {
         if (!request) return;
 
         const reason = editRejectReason.trim();
 
-        if (!reason) {
-            setEditRejectError(
-                "Rədd edilmə səbəbini qeyd edin."
-            );
-            return;
-        }
-
         if (reason.length < 5) {
-            setEditRejectError(
-                "Səbəb ən azı 5 simvol olmalıdır."
-            );
+            setEditRejectError("Səbəb ən azı 5 simvol olmalıdır.");
             return;
         }
 
         if (reason.length > 500) {
-            setEditRejectError(
-                "Səbəb maksimum 500 simvol ola bilər."
-            );
+            setEditRejectError("Səbəb maksimum 500 simvol ola bilər.");
             return;
         }
 
@@ -357,10 +453,6 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
             setEditRejectReason("");
             setEditRejectError("");
 
-            alert(
-                "Redaktə sorğusu rədd edildi. Satıcıya səbəb barədə bildiriş göndərildi."
-            );
-
             await loadDashboard();
         } catch (err) {
             setEditRejectError(err.message);
@@ -369,138 +461,24 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
         }
     }
 
-    function closeEditRequest() {
-        if (editActionLoading !== null) return;
-
-        setSelectedEditRequest(null);
-        setEditRejectReason("");
-        setEditRejectError("");
-    }
-
-    // Tarix formatı
-    function formatDate(value) {
-        if (!value) return "Tarix göstərilməyib";
-
-        const date = new Date(value);
-
-        if (Number.isNaN(date.getTime())) {
-            return "Tarix göstərilməyib";
-        }
-
-        return date.toLocaleString("az-AZ");
-    }
-
-    // Qiymət formatı
-    function formatPrice(value) {
-        if (value === null || value === undefined || value === "") {
-            return "—";
-        }
-
-        return `${Number(value).toLocaleString("az-AZ")} AZN`;
-    }
-
-    function formatValue(value, suffix = "") {
-        if (value === null || value === undefined || value === "") {
-            return "—";
-        }
-
-        return `${value}${suffix}`;
-    }
-
-    function formatEnum(value) {
-        if (!value) return "—";
-
-        return String(value)
-            .replaceAll("_", " ")
-            .toLocaleLowerCase("az-AZ")
-            .replace(/^./, (character) =>
-                character.toLocaleUpperCase("az-AZ")
-            );
-    }
-
-    // Müqayisə üçün məlumatlar
     function getComparisonRows(request) {
         return [
-            {
-                label: "Marka",
-                oldValue: request.oldBrand,
-                newValue: request.brand,
-            },
-            {
-                label: "Model",
-                oldValue: request.oldModel,
-                newValue: request.model,
-            },
-            {
-                label: "Buraxılış ili",
-                oldValue: request.oldYear,
-                newValue: request.year,
-            },
-            {
-                label: "Qiymət",
-                oldValue: formatPrice(request.oldPrice),
-                newValue: formatPrice(request.price),
-            },
-            {
-                label: "Yürüş",
-                oldValue: formatValue(request.oldMileage, " km"),
-                newValue: formatValue(request.mileage, " km"),
-            },
-            {
-                label: "Mühərrik həcmi",
-                oldValue: formatValue(request.oldEngineVolume, " L"),
-                newValue: formatValue(request.engineVolume, " L"),
-            },
-            {
-                label: "At gücü",
-                oldValue: formatValue(request.oldHorsePower, " HP"),
-                newValue: formatValue(request.horsePower, " HP"),
-            },
-            {
-                label: "Yanacaq",
-                oldValue: formatEnum(request.oldFuelType),
-                newValue: formatEnum(request.fuelType),
-            },
-            {
-                label: "Sürətlər qutusu",
-                oldValue: formatEnum(request.oldTransmission),
-                newValue: formatEnum(request.transmission),
-            },
-            {
-                label: "Ban növü",
-                oldValue: formatEnum(request.oldBodyType),
-                newValue: formatEnum(request.bodyType),
-            },
-            {
-                label: "Oturacaq sayı",
-                oldValue: formatEnum(request.oldSeatCount),
-                newValue: formatEnum(request.seatCount),
-            },
-            {
-                label: "Ötürücü",
-                oldValue: formatEnum(request.oldDrivetrain),
-                newValue: formatEnum(request.drivetrain),
-            },
-            {
-                label: "Rəng",
-                oldValue: request.oldColor,
-                newValue: request.color,
-            },
-            {
-                label: "Telefon",
-                oldValue: request.oldContactPhone,
-                newValue: request.contactPhone,
-            },
-            {
-                label: "Şəhər",
-                oldValue: request.oldLocation,
-                newValue: request.location,
-            },
-            {
-                label: "Açıqlama",
-                oldValue: request.oldDescription,
-                newValue: request.description,
-            },
+            ["Marka", request.oldBrand, request.brand],
+            ["Model", request.oldModel, request.model],
+            ["Buraxılış ili", request.oldYear, request.year],
+            ["Qiymət", formatPrice(request.oldPrice), formatPrice(request.price)],
+            ["Yürüş", formatValue(request.oldMileage, " km"), formatValue(request.mileage, " km")],
+            ["Mühərrik həcmi", formatValue(request.oldEngineVolume, " L"), formatValue(request.engineVolume, " L")],
+            ["At gücü", formatValue(request.oldHorsePower, " HP"), formatValue(request.horsePower, " HP")],
+            ["Yanacaq", formatEnum(request.oldFuelType), formatEnum(request.fuelType)],
+            ["Sürətlər qutusu", formatEnum(request.oldTransmission), formatEnum(request.transmission)],
+            ["Ban növü", formatEnum(request.oldBodyType), formatEnum(request.bodyType)],
+            ["Oturacaq sayı", formatValue(request.oldSeatCount), formatValue(request.seatCount)],
+            ["Ötürücü", formatEnum(request.oldDrivetrain), formatEnum(request.drivetrain)],
+            ["Rəng", request.oldColor, request.color],
+            ["Telefon", request.oldContactPhone, request.contactPhone],
+            ["Şəhər", request.oldLocation, request.location],
+            ["Açıqlama", request.oldDescription, request.description],
         ];
     }
 
@@ -512,27 +490,42 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                 <h4>{title}</h4>
 
                 {imageList.length === 0 ? (
-                    <div className="admin-edit-no-image">
-                        Şəkil yoxdur
-                    </div>
+                    <div className="admin-edit-no-image">Şəkil yoxdur</div>
                 ) : (
                     <div className="admin-edit-image-grid">
-                        {imageList.map((url, index) => (
-                            <a
-                                href={url}
-                                target="_blank"
-                                rel="noreferrer"
-                                key={`${url}-${index}`}
-                                className="admin-edit-image-link"
-                            >
-                                <img
-                                    src={url}
-                                    alt={`${title} ${index + 1}`}
-                                    loading="lazy"
-                                />
-                                <span>{index + 1}</span>
-                            </a>
-                        ))}
+                        {imageList.map((item, index) => {
+                            const url =
+                                typeof item === "string"
+                                    ? item
+                                    : item?.imageUrl;
+
+                            if (!url) return null;
+
+                            return (
+                                <button
+                                    type="button"
+                                    key={`${url}-${index}`}
+                                    className="admin-edit-image-link"
+                                    onClick={() =>
+                                        openImageViewer(
+                                            imageList.map((image) =>
+                                                typeof image === "string"
+                                                    ? image
+                                                    : image?.imageUrl
+                                            ).filter(Boolean),
+                                            index
+                                        )
+                                    }
+                                >
+                                    <img
+                                        src={url}
+                                        alt={`${title} ${index + 1}`}
+                                        loading="lazy"
+                                    />
+                                    <span>{index + 1}</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -542,6 +535,141 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
     return (
         <>
             <style>{`
+                .admin-detail-page {
+                    padding: 35px 0 60px;
+                }
+
+                .admin-detail-back {
+                    margin-bottom: 25px;
+                    padding: 11px 18px;
+                    border: 1px solid #ddd;
+                    border-radius: 7px;
+                    background: #fff;
+                    cursor: pointer;
+                    font-weight: 700;
+                }
+
+                .admin-detail-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 20px;
+                    margin-bottom: 25px;
+                }
+
+                .admin-detail-header h1 {
+                    margin: 8px 0;
+                    font-size: 32px;
+                }
+
+                .admin-detail-images {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                    gap: 15px;
+                    margin: 25px 0;
+                }
+
+                .admin-detail-images button {
+                    height: 210px;
+                    display: block;
+                    overflow: hidden;
+                    padding: 0;
+                    border: none;
+                    border-radius: 12px;
+                    background: #eee;
+                    cursor: zoom-in;
+                }
+
+                .admin-detail-images img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    transition: transform .3s ease;
+                }
+
+                .admin-detail-images button:hover img {
+                    transform: scale(1.05);
+                }
+
+                .admin-detail-info {
+                    padding: 25px;
+                    border: 1px solid #e8e8e8;
+                    border-radius: 12px;
+                    background: #fff;
+                }
+
+                .admin-detail-info h2 {
+                    margin-bottom: 22px;
+                }
+
+                .admin-detail-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, minmax(0, 1fr));
+                    gap: 20px;
+                }
+
+                .admin-detail-field {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 7px;
+                    padding-bottom: 12px;
+                    border-bottom: 1px solid #eee;
+                    min-width: 0;
+                }
+
+                .admin-detail-field span {
+                    color: #888;
+                    font-size: 12px;
+                }
+
+                .admin-detail-field strong {
+                    color: #222;
+                    font-size: 15px;
+                    overflow-wrap: anywhere;
+                }
+
+                .admin-detail-description {
+                    margin-top: 28px;
+                    padding-top: 20px;
+                    border-top: 1px solid #eee;
+                }
+
+                .admin-detail-description p {
+                    margin-top: 12px;
+                    line-height: 1.8;
+                    white-space: pre-wrap;
+                }
+
+                .admin-detail-actions {
+                    display: flex;
+                    gap: 12px;
+                    margin-top: 25px;
+                }
+
+                .admin-detail-actions button {
+                    min-width: 150px;
+                    min-height: 45px;
+                    border: none;
+                    border-radius: 7px;
+                    cursor: pointer;
+                    font-weight: 800;
+                }
+
+                .admin-detail-actions button:disabled {
+                    opacity: .5;
+                    cursor: not-allowed;
+                }
+
+                .admin-detail-approve {
+                    color: #fff;
+                    background: #16813a;
+                }
+
+                .admin-detail-reject {
+                    color: #fff;
+                    background: #c51e2e;
+                }
+
                 .admin-modal-overlay {
                     position: fixed;
                     inset: 0;
@@ -552,7 +680,6 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                     padding: 20px;
                     background: rgba(12, 15, 22, .72);
                     backdrop-filter: blur(7px);
-                    animation: adminOverlayIn .25s ease;
                 }
 
                 .admin-modal {
@@ -564,7 +691,6 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                     border-radius: 14px;
                     background: #fff;
                     box-shadow: 0 25px 80px rgba(0, 0, 0, .25);
-                    animation: adminModalIn .3s ease;
                 }
 
                 .admin-modal-top {
@@ -597,9 +723,6 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                 .admin-modal-close {
                     width: 34px;
                     height: 34px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
                     border: none;
                     border-radius: 8px;
                     background: #f3f4f6;
@@ -611,10 +734,7 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                 .admin-modal h2 {
                     margin-top: 20px;
                     color: #17191e;
-                    font-family: 'Barlow Condensed', sans-serif;
-                    font-size: 30px;
-                    font-weight: 800;
-                    text-transform: uppercase;
+                    font-size: 27px;
                 }
 
                 .admin-modal-description {
@@ -632,17 +752,10 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                     background: #f8f8f9;
                 }
 
-                .admin-modal-car.approve {
-                    border-color: #e7eee9;
-                    background: #f5fbf6;
-                }
-
                 .admin-modal-car span {
                     display: block;
                     color: #888;
                     font-size: 11px;
-                    font-weight: 700;
-                    text-transform: uppercase;
                 }
 
                 .admin-modal-car strong {
@@ -652,27 +765,14 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                     font-size: 16px;
                 }
 
-                .admin-modal-info {
-                    margin-top: 15px;
-                    padding: 12px 14px;
-                    border-radius: 7px;
-                    background: #edf8f0;
-                    color: #26713d;
-                    font-size: 12px;
-                    line-height: 1.6;
-                }
-
                 .admin-modal-label {
                     display: block;
-                    margin-top: 22px;
-                    margin-bottom: 9px;
-                    color: #25262b;
+                    margin: 22px 0 9px;
                     font-size: 13px;
                     font-weight: 800;
                 }
 
                 .admin-modal-textarea {
-                    display: block;
                     width: 100%;
                     min-height: 125px;
                     padding: 14px;
@@ -680,29 +780,13 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                     border: 1px solid #dedee2;
                     border-radius: 8px;
                     outline: none;
-                    background: #fff;
-                    color: #222;
-                    font-family: inherit;
-                    font-size: 13px;
-                    line-height: 1.6;
-                }
-
-                .admin-modal-textarea:focus {
-                    border-color: #d32132;
-                    box-shadow: 0 0 0 3px rgba(211, 33, 50, .09);
+                    font: inherit;
                 }
 
                 .admin-modal-error {
                     margin-top: 9px;
                     color: #c51e2e;
                     font-size: 12px;
-                    line-height: 1.5;
-                }
-
-                .admin-modal-hint {
-                    margin-top: 8px;
-                    color: #999;
-                    font-size: 11px;
                 }
 
                 .admin-modal-actions {
@@ -744,317 +828,543 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                     cursor: not-allowed;
                 }
 
-                @keyframes adminOverlayIn {
+                /* TAM EKRAN ŞƏKİL GÖRÜNTÜLƏYİCİSİ */
+
+                .admin-image-viewer {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 100000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 70px 90px;
+                    background: rgba(0, 0, 0, .96);
+                    animation: imageViewerFadeIn .2s ease;
+                }
+
+                @keyframes imageViewerFadeIn {
                     from { opacity: 0; }
                     to { opacity: 1; }
                 }
 
-                @keyframes adminModalIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(15px) scale(.97);
+                .admin-image-viewer-image {
+                    display: block;
+                    max-width: 100%;
+                    max-height: 100%;
+                    width: auto;
+                    height: auto;
+                    object-fit: contain;
+                    user-select: none;
+                    -webkit-user-drag: none;
+                    border-radius: 5px;
+                    box-shadow: 0 10px 50px rgba(0, 0, 0, .4);
+                }
+
+                .admin-image-viewer-close,
+                .admin-image-viewer-arrow {
+                    position: absolute;
+                    z-index: 2;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 1px solid rgba(255, 255, 255, .2);
+                    color: #fff;
+                    background: rgba(255, 255, 255, .12);
+                    cursor: pointer;
+                    transition: background .2s, transform .2s;
+                }
+
+                .admin-image-viewer-close:hover,
+                .admin-image-viewer-arrow:hover {
+                    background: rgba(255, 255, 255, .28);
+                    transform: scale(1.06);
+                }
+
+                .admin-image-viewer-close {
+                    top: 22px;
+                    right: 25px;
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 50%;
+                    font-size: 34px;
+                    line-height: 1;
+                }
+
+                .admin-image-viewer-arrow {
+                    top: 50%;
+                    width: 52px;
+                    height: 52px;
+                    border-radius: 50%;
+                    font-size: 25px;
+                    transform: translateY(-50%);
+                }
+
+                .admin-image-viewer-arrow:hover {
+                    transform: translateY(-50%) scale(1.06);
+                }
+
+                .admin-image-viewer-prev {
+                    left: 22px;
+                }
+
+                .admin-image-viewer-next {
+                    right: 22px;
+                }
+
+                .admin-image-viewer-counter {
+                    position: absolute;
+                    bottom: 22px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    padding: 8px 16px;
+                    border: 1px solid rgba(255, 255, 255, .15);
+                    border-radius: 30px;
+                    color: #fff;
+                    background: rgba(255, 255, 255, .12);
+                    font-size: 14px;
+                    font-weight: 700;
+                    letter-spacing: 1px;
+                }
+
+                @media (max-width: 700px) {
+                    .admin-detail-grid {
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
                     }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0) scale(1);
+
+                    .admin-image-viewer {
+                        padding: 65px 55px;
+                    }
+
+                    .admin-image-viewer-arrow {
+                        width: 42px;
+                        height: 42px;
+                        font-size: 20px;
+                    }
+
+                    .admin-image-viewer-prev {
+                        left: 8px;
+                    }
+
+                    .admin-image-viewer-next {
+                        right: 8px;
+                    }
+
+                    .admin-image-viewer-close {
+                        top: 12px;
+                        right: 12px;
+                        width: 42px;
+                        height: 42px;
                     }
                 }
 
-                @media (max-width: 520px) {
-                    .admin-modal {
-                        padding: 22px;
+                @media (max-width: 450px) {
+                    .admin-detail-grid {
+                        grid-template-columns: 1fr;
                     }
 
+                    .admin-detail-actions,
                     .admin-modal-actions {
-                        flex-direction: column-reverse;
+                        flex-direction: column;
                     }
 
+                    .admin-detail-actions button,
                     .admin-modal-actions button {
                         width: 100%;
+                    }
+
+                    .admin-image-viewer {
+                        padding: 60px 45px;
                     }
                 }
             `}</style>
 
-            <main className="admin-dashboard">
-                <div className="container">
-
-                    <div className="admin-dashboard-header">
-                        <div>
-                            <p className="eyebrow">TAPAVTO İDARƏETMƏ</p>
-                            <h1>Admin paneli</h1>
-                            <p>
-                                Elanları yoxlayın, redaktələri nəzərdən keçirin,
-                                təsdiqləyin və ya rədd edin.
-                            </p>
-                        </div>
-
+            {selectedCarId ? (
+                <main className="admin-dashboard admin-detail-page">
+                    <div className="container">
                         <button
                             type="button"
-                            className="admin-refresh-button"
-                            onClick={loadDashboard}
-                            disabled={loading}
+                            className="admin-detail-back"
+                            onClick={() => navigate("/admin")}
                         >
-                            {loading ? "Yüklənir..." : "Yenilə"}
+                            ← Elanların siyahısına qayıt
                         </button>
-                    </div>
-
-                    {error && (
-                        <div className="admin-error">
-                            {error}
-                        </div>
-                    )}
-
-                    {/* STATISTICS */}
-                    <section className="admin-statistics">
-                        <div className="admin-stat-card">
-                            <span>Ümumi elanlar</span>
-                            <strong>{statistics.totalCars}</strong>
-                        </div>
-
-                        <div className="admin-stat-card pending">
-                            <span>Yoxlama gözləyən</span>
-                            <strong>{statistics.pendingCars}</strong>
-                        </div>
-
-                        <div className="admin-stat-card approved">
-                            <span>Təsdiqlənmiş</span>
-                            <strong>{statistics.approvedCars}</strong>
-                        </div>
-
-                        <div className="admin-stat-card rejected">
-                            <span>Rədd edilmiş</span>
-                            <strong>{statistics.rejectedCars}</strong>
-                        </div>
-
-                        <div className="admin-stat-card">
-                            <span>Qaralamalar</span>
-                            <strong>{statistics.draftCars}</strong>
-                        </div>
-
-                        <div className="admin-stat-card">
-                            <span>İstifadəçilər</span>
-                            <strong>{statistics.totalUsers}</strong>
-                        </div>
-                    </section>
-
-                    {/* EDIT REQUESTS */}
-                    <section className="admin-edit-section">
-                        <div className="admin-section-header">
-                            <div>
-                                <p className="eyebrow">ELANLARA NƏZARƏT</p>
-                                <h2>Elan redaktə sorğuları</h2>
-                                <p className="admin-edit-subtitle">
-                                    Satıcıların mövcud elanlarında etmək
-                                    istədikləri dəyişiklikləri yoxlayın.
-                                </p>
-                            </div>
-
-                            <span className="admin-edit-count">
-                                {editRequests.length} sorğu
-                            </span>
-                        </div>
 
                         {loading ? (
                             <div className="admin-empty-state">
-                                Redaktə sorğuları yüklənir...
+                                Elan məlumatları yüklənir...
                             </div>
-                        ) : editRequests.length === 0 ? (
+                        ) : !selectedCar ? (
                             <div className="admin-empty-state">
-                                <h3>Gözləyən redaktə sorğusu yoxdur</h3>
+                                <h3>Elan tapılmadı</h3>
                                 <p>
-                                    Satıcı redaktə sorğusu göndərdikdə
-                                    burada görünəcək.
+                                    Elan artıq yoxlama siyahısında olmaya bilər.
                                 </p>
                             </div>
                         ) : (
-                            <div className="admin-edit-list">
-                                {editRequests.map((request) => (
-                                    <article
-                                        className="admin-edit-card"
-                                        key={request.id}
+                            <>
+                                <div className="admin-detail-header">
+                                    <div>
+                                        <p className="eyebrow">
+                                            TAPAVTO · ELANIN YOXLAMASI
+                                        </p>
+                                        <h1>
+                                            {selectedCar.brand} {selectedCar.model}
+                                        </h1>
+                                        <p>Elan №{selectedCar.id}</p>
+                                    </div>
+
+                                    <span className="admin-status-pending">
+                                        Yoxlamada
+                                    </span>
+                                </div>
+
+                                <div className="admin-detail-images">
+                                    {selectedCarImages.length > 0 ? (
+                                        selectedCarImages.map((image, index) => (
+                                            <button
+                                                type="button"
+                                                key={`${image}-${index}`}
+                                                onClick={() =>
+                                                    openImageViewer(
+                                                        selectedCarImages,
+                                                        index
+                                                    )
+                                                }
+                                                aria-label={`${index + 1}-ci şəkli böyüt`}
+                                            >
+                                                <img
+                                                    src={image}
+                                                    alt={`${selectedCar.brand} ${selectedCar.model} ${index + 1}`}
+                                                />
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="admin-empty-state">
+                                            Elanın şəkli yoxdur.
+                                        </div>
+                                    )}
+                                </div>
+
+                                <section className="admin-detail-info">
+                                    <h2>Avtomobil məlumatları</h2>
+
+                                    <div className="admin-detail-grid">
+                                        {[
+                                            ["Marka", selectedCar.brand],
+                                            ["Model", selectedCar.model],
+                                            ["Buraxılış ili", selectedCar.year],
+                                            ["Qiymət", formatPrice(selectedCar.price)],
+                                            ["Yürüş", formatValue(selectedCar.mileage, " km")],
+                                            ["Mühərrik həcmi", formatValue(selectedCar.engineVolume, " L")],
+                                            ["At gücü", formatValue(selectedCar.horsePower, " HP")],
+                                            ["Yanacaq", formatEnum(selectedCar.fuelType)],
+                                            ["Sürətlər qutusu", formatEnum(selectedCar.transmission)],
+                                            ["Ban növü", formatEnum(selectedCar.bodyType)],
+                                            ["Oturacaq sayı", formatValue(selectedCar.seatCount)],
+                                            ["Ötürücü", formatEnum(selectedCar.drivetrain)],
+                                            ["Rəng", selectedCar.color],
+                                            ["Şəhər", selectedCar.location],
+                                            ["Satıcı", selectedCar.owner?.firstName || selectedCar.ownerName],
+                                            ["Əlaqə telefonu", selectedCar.contactPhone],
+                                            ["Elanın tarixi", formatDate(selectedCar.createdAt)],
+                                        ].map(([label, value]) => (
+                                            <div className="admin-detail-field" key={label}>
+                                                <span>{label}</span>
+                                                <strong>
+                                                    {value === null || value === undefined || value === ""
+                                                        ? "—"
+                                                        : value}
+                                                </strong>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="admin-detail-description">
+                                        <h3>Elanın açıqlaması</h3>
+                                        <p>
+                                            {selectedCar.description ||
+                                                "Açıqlama əlavə edilməyib."}
+                                        </p>
+                                    </div>
+                                </section>
+
+                                <div className="admin-detail-actions">
+                                    <button
+                                        type="button"
+                                        className="admin-detail-approve"
+                                        onClick={() => openApproveModal(selectedCar)}
+                                        disabled={actionLoading === selectedCar.id}
                                     >
-                                        <div className="admin-edit-card-header">
-                                            <div>
-                                                <span className="admin-edit-request-label">
-                                                    REDAKTƏ SORĞUSU #{request.id}
+                                        Təsdiqlə
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="admin-detail-reject"
+                                        onClick={() => openRejectModal(selectedCar)}
+                                        disabled={actionLoading === selectedCar.id}
+                                    >
+                                        Rədd et
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </main>
+            ) : (
+                <main className="admin-dashboard">
+                    <div className="container">
+                        <div className="admin-dashboard-header">
+                            <div>
+                                <p className="eyebrow">TAPAVTO İDARƏETMƏ</p>
+                                <h1>Admin paneli</h1>
+                                <p>
+                                    Elanları yoxlayın, redaktələri nəzərdən keçirin,
+                                    təsdiqləyin və ya rədd edin.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="admin-refresh-button"
+                                onClick={loadDashboard}
+                                disabled={loading}
+                            >
+                                {loading ? "Yüklənir..." : "Yenilə"}
+                            </button>
+                        </div>
+
+                        {error && (
+                            <div className="admin-error">{error}</div>
+                        )}
+
+                        <section className="admin-statistics">
+                            {[
+                                ["Ümumi elanlar", statistics.totalCars, ""],
+                                ["Yoxlama gözləyən", statistics.pendingCars, "pending"],
+                                ["Təsdiqlənmiş", statistics.approvedCars, "approved"],
+                                ["Rədd edilmiş", statistics.rejectedCars, "rejected"],
+                                ["Qaralamalar", statistics.draftCars, ""],
+                                ["İstifadəçilər", statistics.totalUsers, ""],
+                            ].map(([label, value, className]) => (
+                                <div className={`admin-stat-card ${className}`} key={label}>
+                                    <span>{label}</span>
+                                    <strong>{value}</strong>
+                                </div>
+                            ))}
+                        </section>
+
+                        <section className="admin-edit-section">
+                            <div className="admin-section-header">
+                                <div>
+                                    <p className="eyebrow">ELANLARA NƏZARƏT</p>
+                                    <h2>Elan redaktə sorğuları</h2>
+                                    <p className="admin-edit-subtitle">
+                                        Satıcıların mövcud elanlarında etmək
+                                        istədikləri dəyişiklikləri yoxlayın.
+                                    </p>
+                                </div>
+
+                                <span className="admin-edit-count">
+                                    {editRequests.length} sorğu
+                                </span>
+                            </div>
+
+                            {loading ? (
+                                <div className="admin-empty-state">
+                                    Redaktə sorğuları yüklənir...
+                                </div>
+                            ) : editRequests.length === 0 ? (
+                                <div className="admin-empty-state">
+                                    <h3>Gözləyən redaktə sorğusu yoxdur</h3>
+                                    <p>Yeni sorğular burada görünəcək.</p>
+                                </div>
+                            ) : (
+                                <div className="admin-edit-list">
+                                    {editRequests.map((request) => (
+                                        <article
+                                            className="admin-edit-card"
+                                            key={request.id}
+                                        >
+                                            <div className="admin-edit-card-header">
+                                                <div>
+                                                    <span className="admin-edit-request-label">
+                                                        REDAKTƏ SORĞUSU #{request.id}
+                                                    </span>
+
+                                                    <h3>
+                                                        {request.oldBrand || request.brand}{" "}
+                                                        {request.oldModel || request.model}
+                                                    </h3>
+
+                                                    <p>
+                                                        Satıcı: {request.requestedBy || "—"}
+                                                    </p>
+                                                    <p>
+                                                        Sorğu tarixi: {formatDate(request.createdAt)}
+                                                    </p>
+                                                </div>
+
+                                                <span className="admin-edit-pending-badge">
+                                                    Gözləyir
                                                 </span>
-
-                                                <h3>
-                                                    {request.oldBrand || request.brand}{" "}
-                                                    {request.oldModel || request.model}
-                                                </h3>
-
-                                                <p>
-                                                    Satıcı: {request.requestedBy || "—"}
-                                                </p>
-                                                <p>
-                                                    Sorğu tarixi: {formatDate(request.createdAt)}
-                                                </p>
                                             </div>
 
-                                            <span className="admin-edit-pending-badge">
-                                                Gözləyir
-                                            </span>
-                                        </div>
+                                            <div className="admin-edit-summary">
+                                                <div>
+                                                    <span>Əvvəlki qiymət</span>
+                                                    <strong>{formatPrice(request.oldPrice)}</strong>
+                                                </div>
 
-                                        <div className="admin-edit-summary">
-                                            <div>
-                                                <span>Əvvəlki qiymət</span>
-                                                <strong>
-                                                    {formatPrice(request.oldPrice)}
-                                                </strong>
+                                                <div className="admin-edit-arrow">→</div>
+
+                                                <div>
+                                                    <span>Yeni qiymət</span>
+                                                    <strong>{formatPrice(request.price)}</strong>
+                                                </div>
                                             </div>
 
-                                            <div className="admin-edit-arrow">
-                                                →
-                                            </div>
+                                            <button
+                                                type="button"
+                                                className="admin-edit-review-button"
+                                                onClick={() => {
+                                                    setSelectedEditRequest(request);
+                                                    setEditRejectReason("");
+                                                    setEditRejectError("");
+                                                }}
+                                            >
+                                                Dəyişiklikləri müqayisə et
+                                            </button>
+                                        </article>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
 
-                                            <div>
-                                                <span>Yeni qiymət</span>
-                                                <strong>
-                                                    {formatPrice(request.price)}
-                                                </strong>
-                                            </div>
-                                        </div>
+                        <section className="admin-pending-section">
+                            <div className="admin-section-header">
+                                <div>
+                                    <p className="eyebrow">MODERASİYA</p>
+                                    <h2>Yoxlama gözləyən elanlar</h2>
+                                </div>
 
-                                        <button
-                                            type="button"
-                                            className="admin-edit-review-button"
-                                            onClick={() => {
-                                                setSelectedEditRequest(request);
-                                                setEditRejectReason("");
-                                                setEditRejectError("");
+                                <span className="admin-pending-count">
+                                    {pendingCars.length} elan
+                                </span>
+                            </div>
+
+                            {loading ? (
+                                <div className="admin-empty-state">
+                                    Məlumatlar yüklənir...
+                                </div>
+                            ) : pendingCars.length === 0 ? (
+                                <div className="admin-empty-state">
+                                    <h3>Yoxlama gözləyən elan yoxdur</h3>
+                                    <p>Yeni elan göndərildikdə burada görünəcək.</p>
+                                </div>
+                            ) : (
+                                <div className="admin-pending-list">
+                                    {pendingCars.map((car) => (
+                                        <article
+                                            id={`admin-car-${car.id}`}
+                                            className={`admin-car-card ${
+                                                String(car.id) === String(selectedCarId)
+                                                    ? "admin-car-card-highlighted"
+                                                    : ""
+                                            }`}
+                                            key={car.id}
+                                            onClick={() => navigate(`/admin/${car.id}`)}
+                                            style={{ cursor: "pointer" }}
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(event) => {
+                                                if (event.key === "Enter") {
+                                                    navigate(`/admin/${car.id}`);
+                                                }
                                             }}
                                         >
-                                            Dəyişiklikləri müqayisə et
-                                        </button>
-                                    </article>
-                                ))}
-                            </div>
-                        )}
-                    </section>
+                                            <div className="admin-car-information">
+                                                <div className="admin-car-heading">
+                                                    <h3>
+                                                        {car.brand} {car.model}
+                                                    </h3>
 
-                    {/* PENDING CAR LIST */}
-                    <section className="admin-pending-section">
-                        <div className="admin-section-header">
-                            <div>
-                                <p className="eyebrow">MODERASİYA</p>
-                                <h2>Yoxlama gözləyən elanlar</h2>
-                            </div>
+                                                    <span className="admin-status-pending">
+                                                        Yoxlamada
+                                                    </span>
+                                                </div>
 
-                            <span className="admin-pending-count">
-                                {pendingCars.length} elan
-                            </span>
-                        </div>
+                                                <div className="admin-car-details">
+                                                    <span>İl: {car.year || "—"}</span>
+                                                    <span>Yürüş: {car.mileage ?? "—"} km</span>
+                                                    <span>Qiymət: {formatPrice(car.price)}</span>
+                                                    <span>
+                                                        Satıcı: {car.owner?.firstName || car.ownerName || "—"}
+                                                    </span>
+                                                    <span>
+                                                        Telefon: {car.contactPhone || "—"}
+                                                    </span>
+                                                    <span>Şəhər: {car.location || "—"}</span>
+                                                </div>
 
-                        {loading ? (
-                            <div className="admin-empty-state">
-                                Məlumatlar yüklənir...
-                            </div>
-                        ) : pendingCars.length === 0 ? (
-                            <div className="admin-empty-state">
-                                <h3>Yoxlama gözləyən elan yoxdur</h3>
-                                <p>
-                                    Yeni elan göndərildikdə burada görünəcək.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="admin-pending-list">
-                                {pendingCars.map((car) => (
-                                    <article
-                                        id={`admin-car-${car.id}`}
-                                        className={`admin-car-card ${
-                                            String(car.id) === String(selectedCarId)
-                                                ? "admin-car-card-highlighted"
-                                                : ""
-                                        }`}
-                                        key={car.id}
-                                    >
-                                        <div className="admin-car-information">
-                                            <div className="admin-car-heading">
-                                                <h3>
-                                                    {car.brand} {car.model}
-                                                </h3>
-
-                                                <span className="admin-status-pending">
-                                                    Yoxlamada
-                                                </span>
-                                            </div>
-
-                                            <div className="admin-car-details">
-                                                <span>
-                                                    İl: {car.year || "—"}
-                                                </span>
-
-                                                <span>
-                                                    Yürüş: {car.mileage ?? "—"} km
-                                                </span>
-
-                                                <span>
-                                                    Qiymət: {formatPrice(car.price)}
-                                                </span>
-
-                                                <span>
-                                                    Satıcı: {car.owner?.firstName || car.ownerName || "—"}
-                                                </span>
-
-                                                <span>
-                                                    Telefon: {car.contactPhone || "—"}
-                                                </span>
-
-                                                <span>
-                                                    Şəhər: {car.location || "—"}
-                                                </span>
-                                            </div>
-
-                                            <p className="admin-car-date">
-                                                Yaradılma tarixi: {formatDate(car.createdAt)}
-                                            </p>
-
-                                            {car.description && (
-                                                <p className="admin-car-description">
-                                                    {car.description}
+                                                <p className="admin-car-date">
+                                                    Yaradılma tarixi: {formatDate(car.createdAt)}
                                                 </p>
-                                            )}
 
-                                            <div className="admin-car-actions">
-                                                <button
-                                                    type="button"
-                                                    className="admin-approve-button"
-                                                    onClick={() => openApproveModal(car)}
-                                                    disabled={actionLoading === car.id}
-                                                >
-                                                    Təsdiqlə
-                                                </button>
+                                                {car.description && (
+                                                    <p className="admin-car-description">
+                                                        {car.description}
+                                                    </p>
+                                                )}
 
-                                                <button
-                                                    type="button"
-                                                    className="admin-reject-button"
-                                                    onClick={() => openRejectModal(car)}
-                                                    disabled={actionLoading === car.id}
-                                                >
-                                                    Rədd et
-                                                </button>
+                                                <p style={{ marginTop: 12, fontWeight: 700 }}>
+                                                    Ətraflı məlumatlara bax →
+                                                </p>
+
+                                                <div className="admin-car-actions">
+                                                    <button
+                                                        type="button"
+                                                        className="admin-approve-button"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            openApproveModal(car);
+                                                        }}
+                                                        disabled={actionLoading === car.id}
+                                                    >
+                                                        Təsdiqlə
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        className="admin-reject-button"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            openRejectModal(car);
+                                                        }}
+                                                        disabled={actionLoading === car.id}
+                                                    >
+                                                        Rədd et
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </article>
-                                ))}
-                            </div>
-                        )}
-                    </section>
+                                        </article>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
 
-                    <div className="admin-dashboard-footer">
-                        <button
-                            type="button"
-                            onClick={() => navigate("/")}
-                        >
-                            Sayta qayıt
-                        </button>
+                        <div className="admin-dashboard-footer">
+                            <button
+                                type="button"
+                                onClick={() => navigate("/")}
+                            >
+                                Sayta qayıt
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </main>
+                </main>
+            )}
 
-            {/* CAR APPROVE MODAL */}
             {approveModalCar && (
                 <div
                     className="admin-modal-overlay"
@@ -1093,19 +1403,12 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                             icazə vermiş olacaqsınız.
                         </p>
 
-                        <div className="admin-modal-car approve">
+                        <div className="admin-modal-car">
                             <span>Təsdiqlənəcək avtomobil</span>
                             <strong>
                                 {approveModalCar.brand} {approveModalCar.model}
-                                {approveModalCar.year
-                                    ? ` — ${approveModalCar.year}`
-                                    : ""}
+                                {approveModalCar.year ? ` — ${approveModalCar.year}` : ""}
                             </strong>
-                        </div>
-
-                        <div className="admin-modal-info">
-                            ✓ Təsdiqdən sonra elan aktiv elanlar siyahısına
-                            əlavə olunacaq.
                         </div>
 
                         <div className="admin-modal-actions">
@@ -1133,7 +1436,6 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                 </div>
             )}
 
-            {/* CAR REJECT MODAL */}
             {rejectModalCar && (
                 <div
                     className="admin-modal-overlay"
@@ -1176,16 +1478,11 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                             <span>Rədd ediləcək elan</span>
                             <strong>
                                 {rejectModalCar.brand} {rejectModalCar.model}
-                                {rejectModalCar.year
-                                    ? ` — ${rejectModalCar.year}`
-                                    : ""}
+                                {rejectModalCar.year ? ` — ${rejectModalCar.year}` : ""}
                             </strong>
                         </div>
 
-                        <label
-                            className="admin-modal-label"
-                            htmlFor="reject-reason"
-                        >
+                        <label className="admin-modal-label" htmlFor="reject-reason">
                             Rədd edilmə səbəbi *
                         </label>
 
@@ -1201,10 +1498,6 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                             maxLength={1000}
                             disabled={actionLoading !== null}
                         />
-
-                        <div className="admin-modal-hint">
-                            {rejectReason.length}/1000 simvol
-                        </div>
 
                         {rejectError && (
                             <div className="admin-modal-error">
@@ -1237,13 +1530,12 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                 </div>
             )}
 
-            {/* EDIT REQUEST COMPARISON MODAL */}
             {selectedEditRequest && (
                 <div
                     className="admin-modal-overlay admin-edit-overlay"
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget) {
-                            closeEditRequest();
+                            setSelectedEditRequest(null);
                         }
                     }}
                 >
@@ -1251,12 +1543,11 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                         className="admin-edit-modal"
                         role="dialog"
                         aria-modal="true"
-                        aria-labelledby="edit-request-title"
                     >
                         <div className="admin-edit-modal-header">
                             <div>
                                 <p className="eyebrow">REDAKTƏ YOXLAMASI</p>
-                                <h2 id="edit-request-title">
+                                <h2>
                                     {selectedEditRequest.brand}{" "}
                                     {selectedEditRequest.model}
                                 </h2>
@@ -1269,9 +1560,8 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                             <button
                                 type="button"
                                 className="admin-modal-close"
-                                onClick={closeEditRequest}
+                                onClick={() => setSelectedEditRequest(null)}
                                 disabled={editActionLoading !== null}
-                                aria-label="Bağla"
                             >
                                 ×
                             </button>
@@ -1279,8 +1569,7 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
 
                         <div className="admin-edit-notice">
                             Satıcının təklif etdiyi məlumatları əvvəlki
-                            təsdiqlənmiş elanla müqayisə edin. Təsdiq
-                            edilməyənə qədər mövcud elan dəyişməz qalır.
+                            elanla müqayisə edin.
                         </div>
 
                         <div className="admin-edit-comparison-heading">
@@ -1293,21 +1582,19 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
 
                         <div className="admin-edit-comparison">
                             {getComparisonRows(selectedEditRequest).map(
-                                (row) => (
+                                ([label, oldValue, newValue]) => (
                                     <div
                                         className="admin-edit-comparison-row"
-                                        key={row.label}
+                                        key={label}
                                     >
                                         <div className="admin-edit-field-name">
-                                            {row.label}
+                                            {label}
                                         </div>
-
                                         <div className="admin-edit-old-value">
-                                            {formatValue(row.oldValue)}
+                                            {formatValue(oldValue)}
                                         </div>
-
                                         <div className="admin-edit-new-value">
-                                            {formatValue(row.newValue)}
+                                            {formatValue(newValue)}
                                         </div>
                                     </div>
                                 )
@@ -1316,23 +1603,16 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
 
                         <div className="admin-edit-images-section">
                             <h3>Şəkillərin müqayisəsi</h3>
-
                             <div className="admin-edit-images-columns">
                                 {renderImageList(
                                     selectedEditRequest.oldImageUrls,
                                     "Əvvəlki şəkillər"
                                 )}
-
                                 {renderImageList(
                                     selectedEditRequest.imageUrls,
-                                    "Yeni əlavə edilmiş şəkillər"
+                                    "Yeni şəkillər"
                                 )}
                             </div>
-
-                            <p className="admin-edit-image-note">
-                                Qeyd: Yeni şəkillər təsdiq zamanı mövcud
-                                elanın şəkillərinə əlavə olunur.
-                            </p>
                         </div>
 
                         <div className="admin-edit-reject-area">
@@ -1347,14 +1627,10 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                                     setEditRejectReason(event.target.value);
                                     setEditRejectError("");
                                 }}
-                                placeholder="Rədd etmək istəyirsinizsə, səbəbi burada qeyd edin..."
+                                placeholder="Rədd edilmə səbəbini yazın..."
                                 maxLength={500}
                                 disabled={editActionLoading !== null}
                             />
-
-                            <div className="admin-modal-hint">
-                                {editRejectReason.length}/500 simvol
-                            </div>
 
                             {editRejectError && (
                                 <div className="admin-modal-error">
@@ -1367,7 +1643,7 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                             <button
                                 type="button"
                                 className="admin-modal-cancel"
-                                onClick={closeEditRequest}
+                                onClick={() => setSelectedEditRequest(null)}
                                 disabled={editActionLoading !== null}
                             >
                                 Bağla
@@ -1376,29 +1652,138 @@ function AdminDashboard({ token, navigate, selectedCarId }) {
                             <button
                                 type="button"
                                 className="admin-modal-confirm reject"
-                                onClick={() =>
-                                    handleRejectEdit(selectedEditRequest)
-                                }
+                                onClick={() => handleRejectEdit(selectedEditRequest)}
                                 disabled={editActionLoading !== null}
                             >
-                                {editActionLoading === selectedEditRequest.id
-                                    ? "Gözləyin..."
-                                    : "Redaktəni rədd et"}
+                                Redaktəni rədd et
                             </button>
 
                             <button
                                 type="button"
                                 className="admin-modal-confirm approve"
-                                onClick={() =>
-                                    handleApproveEdit(selectedEditRequest)
-                                }
+                                onClick={() => setApproveEditModal(selectedEditRequest)}
                                 disabled={editActionLoading !== null}
                             >
-                                {editActionLoading === selectedEditRequest.id
-                                    ? "Gözləyin..."
+                                Redaktəni təsdiqlə
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {approveEditModal && (
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal" role="dialog" aria-modal="true">
+                        <div className="admin-modal-top">
+                            <div className="admin-modal-icon approve">✓</div>
+
+                            <button
+                                type="button"
+                                className="admin-modal-close"
+                                onClick={() => setApproveEditModal(null)}
+                                disabled={editActionLoading !== null}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <h2>Redaktənin təsdiqlənməsi</h2>
+
+                        <p className="admin-modal-description">
+                            Satıcının təqdim etdiyi dəyişiklikləri
+                            təsdiqləmək istədiyinizə əminsiniz?
+                        </p>
+
+                        <div className="admin-modal-car">
+                            <span>Təsdiqlənəcək avtomobil</span>
+                            <strong>
+                                {approveEditModal.brand} {approveEditModal.model}
+                            </strong>
+                        </div>
+
+                        <div className="admin-modal-actions">
+                            <button
+                                type="button"
+                                className="admin-modal-cancel"
+                                onClick={() => setApproveEditModal(null)}
+                                disabled={editActionLoading !== null}
+                            >
+                                Ləğv et
+                            </button>
+
+                            <button
+                                type="button"
+                                className="admin-modal-confirm approve"
+                                onClick={handleApproveEdit}
+                                disabled={editActionLoading !== null}
+                            >
+                                {editActionLoading === approveEditModal.id
+                                    ? "Təsdiqlənir..."
                                     : "Redaktəni təsdiqlə"}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* TAM EKRAN ŞƏKİL PƏNCƏRƏSİ */}
+            {isImageViewerOpen && viewerImages.length > 0 && (
+                <div
+                    className="admin-image-viewer"
+                    onClick={closeImageViewer}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Şəkil görüntüləyicisi"
+                >
+                    <button
+                        type="button"
+                        className="admin-image-viewer-close"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            closeImageViewer();
+                        }}
+                        aria-label="Şəkli bağla"
+                    >
+                        ×
+                    </button>
+
+                    {viewerImages.length > 1 && (
+                        <button
+                            type="button"
+                            className="admin-image-viewer-arrow admin-image-viewer-prev"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                showPreviousImage();
+                            }}
+                            aria-label="Əvvəlki şəkil"
+                        >
+                            ❮
+                        </button>
+                    )}
+
+                    <img
+                        className="admin-image-viewer-image"
+                        src={viewerImages[viewerIndex]}
+                        alt={`Şəkil ${viewerIndex + 1}`}
+                        onClick={(event) => event.stopPropagation()}
+                    />
+
+                    {viewerImages.length > 1 && (
+                        <button
+                            type="button"
+                            className="admin-image-viewer-arrow admin-image-viewer-next"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                showNextImage();
+                            }}
+                            aria-label="Növbəti şəkil"
+                        >
+                            ❯
+                        </button>
+                    )}
+
+                    <div className="admin-image-viewer-counter">
+                        {viewerIndex + 1} / {viewerImages.length}
                     </div>
                 </div>
             )}

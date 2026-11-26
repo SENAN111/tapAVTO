@@ -1,17 +1,28 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
 import {
     emptyCarForm,
-    carModels,
     carColors,
     phonePrefixes,
 } from "../data/carData";
 
+import {
+    fetchCatalogBrands,
+    fetchCatalogModels,
+} from "../services/catalogService";
+
 function useCarForm({ token, setAuthError, setAuthMode }) {
     const [showCarForm, setShowCarForm] = useState(false);
     const [carForm, setCarForm] = useState({ ...emptyCarForm });
+
     const [editingCarId, setEditingCarId] = useState(null);
     const [editingCarStatus, setEditingCarStatus] = useState(null);
+
+    // PostgreSQL kataloqundan gələn məlumatlar
+    const [brands, setBrands] = useState([]);
+    const [carModels, setCarModels] = useState([]);
+    const [modelsLoading, setModelsLoading] = useState(false);
 
     const [brandChoice, setBrandChoice] = useState("");
     const [modelChoice, setModelChoice] = useState("");
@@ -22,14 +33,126 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
 
     const [carFormError, setCarFormError] = useState("");
 
+    // Marka siyahısını PostgreSQL kataloqundan yüklə
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadBrands() {
+            try {
+                const data = await fetchCatalogBrands();
+
+                if (!Array.isArray(data)) {
+                    throw new Error("Marka siyahısının formatı düzgün deyil.");
+                }
+
+                if (!cancelled) {
+                    setBrands(data);
+                }
+            } catch (error) {
+                console.error("Markalar yüklənmədi:", error);
+
+                if (!cancelled) {
+                    setBrands([]);
+                    setCarFormError(
+                        error.message || "Markaları yükləmək mümkün olmadı."
+                    );
+                }
+            }
+        }
+
+        loadBrands();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    // Redaktə edilən markanın kataloqda olub-olmadığını yoxla
+    useEffect(() => {
+        if (
+            brands.length === 0 ||
+            !editingCarId ||
+            !carForm.brand
+        ) {
+            return;
+        }
+
+        if (!brands.includes(carForm.brand)) {
+            setBrandChoice("__OTHER__");
+        }
+    }, [brands, editingCarId, carForm.brand]);
+
+    // Seçilmiş markaya uyğun modelləri PostgreSQL-dən yüklə
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadModels() {
+            if (!brandChoice || brandChoice === "__OTHER__") {
+                setCarModels([]);
+                setModelsLoading(false);
+                return;
+            }
+
+            setModelsLoading(true);
+            setCarModels([]);
+
+            try {
+                const data = await fetchCatalogModels(brandChoice);
+
+                if (!Array.isArray(data)) {
+                    throw new Error("Model siyahısının formatı düzgün deyil.");
+                }
+
+                if (cancelled) return;
+
+                setCarModels(data);
+
+                // Redaktə zamanı əvvəlki modeli saxla.
+                if (editingCarId && carForm.model) {
+                    if (data.includes(carForm.model)) {
+                        setModelChoice(carForm.model);
+                    } else {
+                        setModelChoice("__OTHER__");
+                    }
+                }
+            } catch (error) {
+                console.error("Modellər yüklənmədi:", error);
+
+                if (!cancelled) {
+                    setCarModels([]);
+                    setCarFormError(
+                        error.message || "Modelləri yükləmək mümkün olmadı."
+                    );
+                }
+            } finally {
+                if (!cancelled) {
+                    setModelsLoading(false);
+                }
+            }
+        }
+
+        loadModels();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [brandChoice]);
+
     function resetCarForm() {
-        setCarForm({ ...emptyCarForm });
+        setCarForm({
+            ...emptyCarForm,
+            features: [],
+        });
+
         setBrandChoice("");
         setModelChoice("");
         setColorChoice("");
+
         setPhonePrefix("+99450");
         setPhoneNumber("");
+
         setCarFormError("");
+
         setEditingCarId(null);
         setEditingCarStatus(null);
     }
@@ -55,6 +178,8 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
 
         setBrandChoice(value);
         setModelChoice("");
+        setCarModels([]);
+        setCarFormError("");
 
         setCarForm((previous) => ({
             ...previous,
@@ -83,6 +208,22 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
         }));
     }
 
+    // Avtomobil təchizatlarının seçilməsi və seçimdən çıxarılması
+    function handleFeatureChange(feature, checked) {
+        setCarForm((previous) => {
+            const currentFeatures = Array.isArray(previous.features)
+                ? previous.features
+                : [];
+
+            return {
+                ...previous,
+                features: checked
+                    ? [...new Set([...currentFeatures, feature])]
+                    : currentFeatures.filter((item) => item !== feature),
+            };
+        });
+    }
+
     function handleColorChange(event) {
         const value = event.target.value;
 
@@ -107,6 +248,8 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
     }
 
     function openEditForm(car) {
+        if (!car) return;
+
         const phone = car.contactPhone || "";
 
         const matchedPrefix = phonePrefixes.find((prefix) =>
@@ -118,15 +261,6 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
         const remainingPhone = phone.startsWith(selectedPrefix)
             ? phone.slice(selectedPrefix.length)
             : phone.replace(/\D/g, "").slice(-7);
-
-        const brandExists = Object.prototype.hasOwnProperty.call(
-            carModels,
-            car.brand
-        );
-
-        const modelExists = brandExists
-            ? carModels[car.brand].includes(car.model)
-            : false;
 
         setCarForm({
             brand: car.brand || "",
@@ -145,15 +279,15 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
             color: car.color || "",
             description: car.description || "",
             contactPhone: phone,
+
+            // Redaktə zamanı əvvəlki təchizatları yüklə
+            features: Array.isArray(car.features)
+                ? car.features
+                : [],
         });
 
-        setBrandChoice(brandExists ? car.brand : "__OTHER__");
-
-        setModelChoice(
-            brandExists && modelExists
-                ? car.model
-                : "__OTHER__"
-        );
+        setBrandChoice(car.brand || "__OTHER__");
+        setModelChoice(car.model || "");
 
         setColorChoice(
             carColors.includes(car.color)
@@ -166,6 +300,7 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
 
         setEditingCarId(car.id);
         setEditingCarStatus(car.status || null);
+
         setShowCarForm(true);
         setCarFormError("");
     }
@@ -180,6 +315,10 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
         editingCarId,
         setEditingCarId,
         editingCarStatus,
+
+        brands,
+        carModels,
+        modelsLoading,
 
         brandChoice,
         modelChoice,
@@ -198,6 +337,7 @@ function useCarForm({ token, setAuthError, setAuthMode }) {
         handleBrandChange,
         handleModelChange,
         handleCarChange,
+        handleFeatureChange,
         handleColorChange,
         handlePhonePrefixChange,
         handlePhoneNumberChange,

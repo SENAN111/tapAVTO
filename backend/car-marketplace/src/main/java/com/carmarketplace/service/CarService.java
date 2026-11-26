@@ -11,14 +11,18 @@ import com.carmarketplace.entity.enums.FuelType;
 import com.carmarketplace.entity.enums.Transmission;
 import com.carmarketplace.repository.CarRepository;
 import com.carmarketplace.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -143,6 +147,18 @@ public class CarService {
 
         Car car = findCarById(id);
 
+        // Silinmiş elan favoritlərdə görünə bilər,
+        // amma satıcının şəxsi əlaqə məlumatları gizlədilir.
+        if (car.getStatus() == CarStatus.DELETED) {
+
+            CarResponse response = mapToResponse(car);
+
+            response.setContactPhone(null);
+            response.setOwnerName(null);
+
+            return response;
+        }
+
         boolean isPublic =
                 car.getStatus() == CarStatus.APPROVED
                         || car.getStatus() == CarStatus.PUBLISHED;
@@ -173,6 +189,11 @@ public class CarService {
     public CarResponse publishCar(Long id) {
 
         Car car = findCarById(id);
+
+        System.out.println("========== DEBUG CAR ==========");
+        System.out.println("CAR ID: " + car.getId());
+        System.out.println("CAR STATUS: " + car.getStatus());
+        System.out.println("================================");
 
         checkOwnershipOrAdmin(car);
 
@@ -278,6 +299,9 @@ public class CarService {
         existingCar.setDescription(request.getDescription());
         existingCar.setContactPhone(request.getContactPhone());
 
+        // Avtomobilin təchizatlarını yenilə
+        existingCar.setFeatures(request.getFeatures());
+
         // Adminin redaktəsi zamanı təsdiqlənmiş status saxlanılır.
         // DRAFT və REJECTED elanların statusu da dəyişdirilmir.
 
@@ -343,6 +367,9 @@ public class CarService {
         car.setDescription(request.getDescription());
         car.setContactPhone(request.getContactPhone());
 
+        // Yeni avtomobilin təchizatlarını əlavə et
+        car.setFeatures(request.getFeatures());
+
         return car;
     }
 
@@ -371,6 +398,13 @@ public class CarService {
         response.setColor(car.getColor());
         response.setDescription(car.getDescription());
         response.setContactPhone(car.getContactPhone());
+
+        // Təchizatları API cavabına əlavə et
+        response.setFeatures(
+                car.getFeatures() != null
+                        ? car.getFeatures()
+                        : List.of()
+        );
 
         response.setStatus(car.getStatus());
         response.setRejectionReason(car.getRejectionReason());

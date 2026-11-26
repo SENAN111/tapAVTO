@@ -95,6 +95,158 @@ a {
   color: #e53935;
 }
 
+/* ==============================
+   TAPAVTO TOAST NOTIFICATIONS
+============================== */
+
+.app-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 10000;
+
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    width: min(420px, calc(100vw - 32px));
+    min-height: 88px;
+    padding: 17px 18px;
+
+    background: #ffffff;
+    border: 1px solid #e8e8e8;
+    border-radius: 16px;
+
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
+
+    animation: toastSlideIn 0.35s ease forwards;
+    overflow: hidden;
+}
+
+.app-toast-success {
+    border-left: 5px solid #16a36a;
+}
+
+.app-toast-error {
+    border-left: 5px solid #e04444;
+}
+
+.toast-icon {
+    flex-shrink: 0;
+
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+    font-size: 21px;
+    font-weight: 800;
+}
+
+.app-toast-success .toast-icon {
+    color: #ffffff;
+    background: #16a36a;
+}
+
+.app-toast-error .toast-icon {
+    color: #ffffff;
+    background: #e04444;
+}
+
+.toast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.toast-content strong {
+    display: block;
+    margin-bottom: 5px;
+
+    color: #20252d;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.toast-content p {
+    margin: 0;
+    color: #626b78;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.toast-close {
+    align-self: flex-start;
+    flex-shrink: 0;
+
+    border: none;
+    background: transparent;
+
+    color: #9299a3;
+    font-size: 25px;
+    line-height: 1;
+    cursor: pointer;
+
+    transition: color 0.2s ease;
+}
+
+.toast-close:hover {
+    color: #20252d;
+}
+
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+
+    width: 100%;
+    height: 3px;
+
+    background: rgba(22, 163, 106, 0.18);
+    transform-origin: left;
+    animation: toastProgress 5s linear forwards;
+}
+
+.app-toast-error .toast-progress {
+    background: rgba(224, 68, 68, 0.2);
+}
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(35px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes toastProgress {
+    from {
+        transform: scaleX(1);
+    }
+
+    to {
+        transform: scaleX(0);
+    }
+}
+
+@media (max-width: 600px) {
+    .app-toast {
+        top: 12px;
+        right: 12px;
+        width: calc(100vw - 24px);
+        min-height: 80px;
+        padding: 14px;
+    }
+}
+
+
 
 
 

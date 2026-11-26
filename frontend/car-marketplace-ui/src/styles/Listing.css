@@ -1,5 +1,7 @@
 
-/* LISTING MODAL */
+/* =================================
+   TAPAVTO - LISTING MODAL
+================================= */
 
 .listing-backdrop {
   z-index: 4500;
@@ -87,6 +89,8 @@
   margin: 0 12px;
   background: var(--border);
 }
+
+/* LISTING FORM */
 
 .listing-form-grid {
   display: grid;
@@ -178,6 +182,8 @@
   background: var(--red);
   color: white;
 }
+
+/* IMAGE UPLOAD */
 
 .listing-upload {
   margin-top: 20px;
@@ -338,7 +344,9 @@
   font-weight: 700;
 }
 
-/* CAR DETAILS - IMAGE OVERLAY */
+/* =================================
+   CAR DETAILS - IMAGE OVERLAY
+================================= */
 
 .detail-main-image-wrap {
   position: relative;
@@ -416,7 +424,134 @@
   color: #e53935;
 }
 
-/* RESPONSIVE */
+/* =================================
+   TAPAVTO - MODERN CAR FEATURES
+================================= */
+
+.car-features-heading {
+  margin-bottom: 14px;
+}
+
+.car-features-heading label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--dark);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.car-features-heading small {
+  display: block;
+  margin-top: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* Features grid */
+
+.car-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  width: 100%;
+}
+
+/* Individual feature */
+
+.car-feature-option {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  margin: 0 !important;
+  padding: 9px 11px;
+  border: 1px solid #e5e5e9;
+  border-radius: 7px;
+  background: #fff;
+  color: #45454d !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: all .2s ease;
+  box-sizing: border-box;
+}
+
+.car-feature-option:hover {
+  border-color: var(--red);
+  background: #fffafa;
+}
+
+/* Original checkbox hidden */
+
+.car-feature-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Custom checkbox */
+
+.car-feature-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1.5px solid #d4d4da;
+  border-radius: 5px;
+  background: #fff;
+  color: transparent;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  transition: all .2s ease;
+}
+
+/* Selected state */
+
+.car-feature-option.selected {
+  border-color: var(--red);
+  background: #fff5f5;
+  color: var(--red) !important;
+}
+
+.car-feature-option.selected .car-feature-check {
+  border-color: var(--red);
+  background: var(--red);
+  color: #fff;
+}
+
+/* Focus and disabled */
+
+.car-feature-option:has(input:focus-visible) {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+
+.car-feature-option:has(input:disabled) {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* =================================
+   RESPONSIVE
+================================= */
+
+@media (max-width: 850px) {
+  .car-features-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
 @media (max-width: 600px) {
   .listing-modal {
@@ -445,5 +580,29 @@
   .detail-favorite-button {
     padding: 8px 11px;
     font-size: 12px;
+  }
+
+  .car-features-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .car-feature-option {
+    min-height: 44px;
+    gap: 7px;
+    padding: 8px;
+    font-size: 10px !important;
+  }
+
+  .car-feature-check {
+    flex-basis: 17px;
+    width: 17px;
+    height: 17px;
+  }
+}
+
+@media (max-width: 360px) {
+  .car-features-grid {
+    grid-template-columns: 1fr;
   }
 }

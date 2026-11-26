@@ -6,6 +6,21 @@ import {
   getBodyType,
 } from "../../utils/carUtils";
 
+const carFeatureLabels = {
+  SUNROOF: "Lyuk",
+  HEATED_SEATS: "Oturacaqların isidilməsi",
+  HEATED_STEERING_WHEEL: "Sükanın isidilməsi",
+  REAR_CAMERA: "Arxa görüntü kamerası",
+  PARKING_SENSORS: "Park radarları",
+  CRUISE_CONTROL: "Kruiz-kontrol",
+  AIR_CONDITIONING: "Kondisioner",
+  CLIMATE_CONTROL: "İqlim kontrolu",
+  LEATHER_SEATS: "Dəri salon",
+  PANORAMIC_ROOF: "Panoramik tavan",
+  RAIN_SENSOR: "Yağış sensoru",
+  LIGHT_SENSOR: "İşıq sensoru",
+};
+
 function CarDetails({
   selectedCar,
   selectedImages,
@@ -19,6 +34,10 @@ function CarDetails({
   toggleFavorite,
   isFavorite,
 }) {
+  const features = Array.isArray(selectedCar?.features)
+    ? selectedCar.features
+    : [];
+
   return (
     <main className="car-detail-page">
       {!selectedCar ? (
@@ -44,7 +63,6 @@ function CarDetails({
             ← Bütün avtomobillər
           </button>
 
-          {/* Avtomobil haqqında qısa məlumat sətri */}
           <div className="detail-quick-info">
             <span>{selectedCar.brand}</span>
             <span className="quick-info-divider">|</span>
@@ -99,7 +117,6 @@ function CarDetails({
                         {activeImage + 1} / {selectedImages.length}
                       </span>
 
-                      {/* Avtomobil məlumatları və favorit düyməsi şəklin üzərində */}
                       <div className="detail-image-overlay">
                         <div className="detail-car-summary">
                           <span>{selectedCar.brand}</span>
@@ -171,6 +188,27 @@ function CarDetails({
                     "Əlavə məlumat qeyd edilməyib."}
                 </p>
               </div>
+
+              {features.length > 0 && (
+                <div className="detail-features detail-panel">
+                  <p className="eyebrow">AVTOMOBİLİN TƏCHİZATI</p>
+                  <h2>Əlavə xüsusiyyətlər</h2>
+
+                  <div className="detail-features-grid">
+                    {features.map((feature) => (
+                      <div
+                        className="detail-feature-item"
+                        key={feature}
+                      >
+                        <span className="detail-feature-check">✓</span>
+                        <span>
+                          {carFeatureLabels[feature] || feature}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
             <aside className="detail-sidebar">
@@ -202,10 +240,6 @@ function CarDetails({
                   <span>Yürüş</span>
                   <strong>{formatPrice(selectedCar.mileage)} km</strong>
                 </div>
-                <div className="spec-row">
-                  <span>Ban növü</span>
-                  <strong>{getBodyType(selectedCar.bodyType)}</strong>
-                </div>
 
                 <div className="spec-row">
                   <span>Mühərrikin həcmi</span>
@@ -223,11 +257,6 @@ function CarDetails({
                       ? `${selectedCar.horsePower} a.g.`
                       : "Məlum deyil"}
                   </strong>
-                </div>
-
-                <div className="spec-row">
-                  <span>Yürüş</span>
-                  <strong>{formatPrice(selectedCar.mileage)} km</strong>
                 </div>
 
                 <div className="spec-row">

@@ -143,7 +143,7 @@ function CarList({
                 )}
 
                 <span className="car-image-label">
-                  CAR MARKET
+                  tapAVTO
                 </span>
               </div>
 

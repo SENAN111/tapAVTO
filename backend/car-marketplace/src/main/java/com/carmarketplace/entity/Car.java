@@ -53,13 +53,20 @@ public class Car {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    // Avtomobilin təchizatları
+    @ElementCollection
+    @CollectionTable(
+            name = "car_features",
+            joinColumns = @JoinColumn(name = "car_id")
+    )
+    @Column(name = "feature")
+    private List<String> features = new ArrayList<>();
+
     private String contactPhone;
     private String location;
 
     private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
-
     private LocalDateTime deletedAt;
 
     private String deletedBy;
@@ -109,93 +116,180 @@ public class Car {
         updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getBrand() { return brand; }
-    public void setBrand(String brand) { this.brand = brand; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getModel() { return model; }
-    public void setModel(String model) { this.model = model; }
+    public String getBrand() {
+        return brand;
+    }
 
-    public Integer getYear() { return year; }
-    public void setYear(Integer year) { this.year = year; }
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
 
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
+    public String getModel() {
+        return model;
+    }
 
-    public Long getMileage() { return mileage; }
-    public void setMileage(Long mileage) { this.mileage = mileage; }
+    public void setModel(String model) {
+        this.model = model;
+    }
 
-    public BigDecimal getEngineVolume() { return engineVolume; }
+    public Integer getYear() {
+        return year;
+    }
+
+    public void setYear(Integer year) {
+        this.year = year;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
+    public Long getMileage() {
+        return mileage;
+    }
+
+    public void setMileage(Long mileage) {
+        this.mileage = mileage;
+    }
+
+    public BigDecimal getEngineVolume() {
+        return engineVolume;
+    }
+
     public void setEngineVolume(BigDecimal engineVolume) {
         this.engineVolume = engineVolume;
     }
 
-    public Integer getHorsePower() { return horsePower; }
+    public Integer getHorsePower() {
+        return horsePower;
+    }
+
     public void setHorsePower(Integer horsePower) {
         this.horsePower = horsePower;
     }
 
-    public FuelType getFuelType() { return fuelType; }
+    public FuelType getFuelType() {
+        return fuelType;
+    }
+
     public void setFuelType(FuelType fuelType) {
         this.fuelType = fuelType;
     }
 
-    public Transmission getTransmission() { return transmission; }
+    public Transmission getTransmission() {
+        return transmission;
+    }
+
     public void setTransmission(Transmission transmission) {
         this.transmission = transmission;
     }
 
-    public BodyType getBodyType() { return bodyType; }
+    public BodyType getBodyType() {
+        return bodyType;
+    }
+
     public void setBodyType(BodyType bodyType) {
         this.bodyType = bodyType;
     }
 
-    public SeatCount getSeatCount() { return seatCount; }
+    public SeatCount getSeatCount() {
+        return seatCount;
+    }
+
     public void setSeatCount(SeatCount seatCount) {
         this.seatCount = seatCount;
     }
 
-    public Drivetrain getDrivetrain() { return drivetrain; }
+    public Drivetrain getDrivetrain() {
+        return drivetrain;
+    }
+
     public void setDrivetrain(Drivetrain drivetrain) {
         this.drivetrain = drivetrain;
     }
 
-    public String getColor() { return color; }
-    public void setColor(String color) { this.color = color; }
+    public String getColor() {
+        return color;
+    }
 
-    public String getDescription() { return description; }
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
     public void setDescription(String description) {
         this.description = description;
     }
 
-    public String getContactPhone() { return contactPhone; }
+    public List<String> getFeatures() {
+        return features;
+    }
+
+    public void setFeatures(List<String> features) {
+        this.features = features != null
+                ? new ArrayList<>(features)
+                : new ArrayList<>();
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
     public void setContactPhone(String contactPhone) {
         this.contactPhone = contactPhone;
     }
 
-    public String getLocation() { return location; }
+    public String getLocation() {
+        return location;
+    }
+
     public void setLocation(String location) {
         this.location = location;
     }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
 
-    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
     public void setDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
     }
 
-    public String getDeletedBy() { return deletedBy; }
+    public String getDeletedBy() {
+        return deletedBy;
+    }
+
     public void setDeletedBy(String deletedBy) {
         this.deletedBy = deletedBy;
     }
@@ -208,30 +302,50 @@ public class Car {
         this.statusBeforeDelete = statusBeforeDelete;
     }
 
-    public User getOwner() { return owner; }
-    public void setOwner(User owner) { this.owner = owner; }
+    public User getOwner() {
+        return owner;
+    }
 
-    public CarStatus getStatus() { return status; }
+    public void setOwner(User owner) {
+        this.owner = owner;
+    }
+
+    public CarStatus getStatus() {
+        return status;
+    }
+
     public void setStatus(CarStatus status) {
         this.status = status;
     }
 
-    public String getRejectionReason() { return rejectionReason; }
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
     public void setRejectionReason(String rejectionReason) {
         this.rejectionReason = rejectionReason;
     }
 
-    public LocalDateTime getReviewedAt() { return reviewedAt; }
+    public LocalDateTime getReviewedAt() {
+        return reviewedAt;
+    }
+
     public void setReviewedAt(LocalDateTime reviewedAt) {
         this.reviewedAt = reviewedAt;
     }
 
-    public String getReviewedBy() { return reviewedBy; }
+    public String getReviewedBy() {
+        return reviewedBy;
+    }
+
     public void setReviewedBy(String reviewedBy) {
         this.reviewedBy = reviewedBy;
     }
 
-    public List<CarImage> getImages() { return images; }
+    public List<CarImage> getImages() {
+        return images;
+    }
+
     public void setImages(List<CarImage> images) {
         this.images = images;
     }

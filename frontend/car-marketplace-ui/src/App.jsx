@@ -13,6 +13,7 @@ import CarFormModal from "./components/modals/CarFormModal";
 import AuthModal from "./components/modals/AuthModal";
 import Favorites from "./components/cars/Favorites";
 import AdminDashboard from "./components/admin/AdminDashboard.jsx";
+import Toast from "./components/common/Toast";
 
 import useCars from "./hooks/useCars";
 import useAuth from "./hooks/useAuth";
@@ -27,6 +28,7 @@ import {
 } from "./data/carData";
 
 import { getCategory } from "./utils/carUtils";
+import { fetchCarById } from "./services/carService";
 
 function getUserRoles(token) {
     if (!token) return [];
@@ -74,6 +76,20 @@ function getUserRoles(token) {
 }
 
 function App() {
+    // Toast bildirişlərinin state-i
+    const [toast, setToast] = useState(null);
+
+    function showToast(message, type = "success") {
+        setToast({
+            message,
+            type,
+        });
+    }
+
+    function closeToast() {
+        setToast(null);
+    }
+
     const {
         token,
         authMode,
@@ -86,7 +102,7 @@ function App() {
         handleAuthSubmit,
         logout: authLogout,
         openAuth,
-    } = useAuth();
+    } = useAuth({ notify: showToast });
 
     const {
         favoriteIds,
@@ -120,6 +136,10 @@ function App() {
     const [activeImage, setActiveImage] = useState(0);
     const [showLightbox, setShowLightbox] = useState(false);
 
+    // URL vasitəsilə açılan elan üçün ayrıca məlumat
+    const [routeCar, setRouteCar] = useState(null);
+    const [routeCarLoading, setRouteCarLoading] = useState(false);
+
     const [carFormLoading, setCarFormLoading] = useState(false);
 
     const [draftCarId, setDraftCarId] = useState(null);
@@ -127,11 +147,9 @@ function App() {
     const [pendingEditRequestId, setPendingEditRequestId] =
         useState(null);
 
-    // Hazırda seçilmiş yeni şəkillərin yüklənmə sayı.
     const [uploadedEditImageCount, setUploadedEditImageCount] =
         useState(0);
 
-    // Serverdə redaktə sorğusuna əvvəlcədən yüklənmiş şəkillərin sayı.
     const [stagedEditImageCount, setStagedEditImageCount] =
         useState(0);
 
@@ -168,6 +186,7 @@ function App() {
         handleBrandChange,
         handleModelChange,
         handleCarChange,
+        handleFeatureChange,
         handleColorChange,
         handlePhonePrefixChange,
         handlePhoneNumberChange,
@@ -204,22 +223,91 @@ function App() {
     const isMyCarsPage = currentPath === "/my-cars";
     const isFavoritesPage = currentPath === "/favorites";
 
-    const selectedCar = carPageMatch
+    // URL-dən avtomobil ID-si
+    const carIdFromPath = carPageMatch?.[1] || null;
+
+    // Əvvəlcə mövcud massivlərdə axtarırıq
+    const localCar = carPageMatch
         ? cars.find(
-              (car) => String(car.id) === carPageMatch[1]
+              (car) => String(car.id) === String(carIdFromPath)
           ) ||
           myCars.find(
-              (car) => String(car.id) === carPageMatch[1]
+              (car) => String(car.id) === String(carIdFromPath)
           )
         : null;
 
+    // API-dən yüklənmiş avtomobili yoxlayırıq
+    const routeCarForPath =
+        routeCar &&
+        String(routeCar.id) === String(carIdFromPath)
+            ? routeCar
+            : null;
+
+    const selectedCar = localCar || routeCarForPath;
+
     const isCarPage = Boolean(carPageMatch);
 
+    // Silinmiş elan massivlərdə olmadıqda ID ilə API-dən yüklənir
+    useEffect(() => {
+        if (!carIdFromPath) {
+            setRouteCar(null);
+            setRouteCarLoading(false);
+            return;
+        }
+
+        // Avtomobil artıq cars və ya myCars daxilindədirsə,
+        // əlavə sorğu göndərmirik.
+        if (localCar) {
+            setRouteCar(null);
+            setRouteCarLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+
+        setRouteCar(null);
+        setRouteCarLoading(true);
+
+        fetchCarById(carIdFromPath, token)
+            .then((car) => {
+                if (!cancelled) {
+                    setRouteCar(car);
+                }
+            })
+            .catch((error) => {
+                console.error(
+                    "Elan məlumatları yüklənmədi:",
+                    error
+                );
+
+                if (!cancelled) {
+                    setRouteCar(null);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setRouteCarLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [carIdFromPath, token, localCar]);
+
+    // Şəkillərin formatını uyğunlaşdırırıq.
+    // API imageUrls massivində URL-ləri string kimi qaytarır.
     const selectedImages = selectedCar
-        ? carImages[selectedCar.id] || []
+        ? carImages[selectedCar.id]?.length
+            ? carImages[selectedCar.id]
+            : Array.isArray(selectedCar.imageUrls)
+              ? selectedCar.imageUrls.map((imageUrl, index) => ({
+                    id: `${selectedCar.id}-${index}`,
+                    imageUrl,
+                }))
+              : []
         : [];
 
-    // Redaktə edilən avtomobilin mövcud şəkillərinin sayı.
     const existingImageCount = editingCarId
         ? (carImages[editingCarId] || []).length
         : 0;
@@ -266,9 +354,6 @@ function App() {
         setUploadedImageCount(0);
         setImageError("");
         setCarFormLoading(false);
-
-        // Pending sorğunun ID-sini və serverdəki şəkil sayını saxlayırıq.
-        // Modal yenidən açılanda serverdən bərpa ediləcək.
     }
 
     function openEditForm(car) {
@@ -287,7 +372,7 @@ function App() {
         setCarFormLoading(false);
     }
 
-    // Mövcud redaktə sorğusunu serverdən bərpa et.
+    // Redaktə sorğusunun mövcud vəziyyətini yoxlayırıq.
     useEffect(() => {
         if (
             !showCarForm ||
@@ -318,11 +403,8 @@ function App() {
 
         if (pendingRequest) {
             setPendingEditRequestId(pendingRequest.id);
-
-            // Yeni seçilmiş fayllar olmadığı üçün sıfırdan başlayır.
             setUploadedEditImageCount(0);
 
-            // Əvvəlki şəkillər serverdə saxlanılır.
             setStagedEditImageCount(
                 Array.isArray(pendingRequest.imageUrls)
                     ? pendingRequest.imageUrls.length
@@ -342,7 +424,7 @@ function App() {
         editRequestsLoading,
     ]);
 
-    // Brauzerin geri düyməsi.
+    // Brauzerin geri düyməsini idarə edirik.
     useEffect(() => {
         function handlePopState() {
             setCurrentPath(window.location.pathname);
@@ -362,21 +444,20 @@ function App() {
         };
     }, []);
 
-    // Admin daxil olduqda panelə yönləndir.
+    // Admin istifadəçisini admin səhifəsinə yönləndiririk.
     useEffect(() => {
         if (token && isAdmin && !isAdminPage) {
             navigate("/admin");
         }
     }, [token]);
 
-    // Admin olmayan istifadəçinin admin səhifəsinə girişini bağla.
     useEffect(() => {
         if (isAdminPage && (!token || !isAdmin)) {
             navigate("/");
         }
     }, [currentPath, token, isAdmin]);
 
-    // Şəkil böyüdülmüş pəncərəsinin idarə edilməsi.
+    // Şəkil pəncərəsinin klaviatura idarəetməsi.
     useEffect(() => {
         if (!showLightbox) return;
 
@@ -424,7 +505,6 @@ function App() {
         };
     }, [showLightbox, selectedImages.length]);
 
-    // Avtomobillərin axtarışı və filtrasiyası.
     const filteredCars = cars.filter((car) => {
         const text =
             `${car.brand || ""} ${car.model || ""} ${car.year || ""}`
@@ -483,10 +563,10 @@ function App() {
         setShowLightbox(false);
 
         closeCarForm();
+
         navigate("/");
     }
 
-    // Avtomobil əməliyyatları.
     const {
         handleCarSubmit,
         handleDeleteCar,
@@ -532,12 +612,21 @@ function App() {
 
         closeCarForm,
         loadMyCars,
+        loadMyEditRequests,
         loadCars,
         navigate,
+
+        // Toast bildiriş funksiyası
+        notify: showToast,
     });
 
     return (
         <div className="app">
+            <Toast
+                toast={toast}
+                onClose={closeToast}
+            />
+
             <Header
                 token={token}
                 goHome={goHome}
@@ -556,6 +645,7 @@ function App() {
                     token={token}
                     navigate={navigate}
                     selectedCarId={selectedAdminCarId}
+                    onCarsUpdated={loadCars}
                 />
             ) : (
                 <>
@@ -564,6 +654,8 @@ function App() {
                             goHome={goHome}
                             error={error}
                             myCars={myCars}
+                            myEditRequests={myEditRequests}
+                            editRequestsLoading={editRequestsLoading}
                             openCarForm={openCarForm}
                             carImages={carImages}
                             openEditForm={openEditForm}
@@ -575,6 +667,7 @@ function App() {
                             favoriteIds={favoriteIds}
                             toggleFavorite={toggleFavorite}
                             openCarDetails={openCarDetails}
+                            token={token}
                         />
                     ) : !isCarPage ? (
                         <main>
@@ -627,7 +720,7 @@ function App() {
                         <CarDetails
                             selectedCar={selectedCar}
                             selectedImages={selectedImages}
-                            loading={loading}
+                            loading={routeCarLoading}
                             closeCarDetails={closeCarDetails}
                             activeImage={activeImage}
                             setActiveImage={setActiveImage}
@@ -674,6 +767,7 @@ function App() {
                         handleModelChange={handleModelChange}
                         carForm={carForm}
                         handleCarChange={handleCarChange}
+                        handleFeatureChange={handleFeatureChange}
                         bodyTypes={bodyTypes}
                         colorChoice={colorChoice}
                         handleColorChange={handleColorChange}

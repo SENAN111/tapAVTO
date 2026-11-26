@@ -462,4 +462,66 @@
   transform: translateX(-50%);
   color: white;
   font-size: 14px;
+
+/* ==============================
+   TAPAVTO - CAR FEATURES
+============================== */
+
+.detail-features {
+  margin-top: 22px;
+}
+
+.detail-features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.detail-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 45px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--dark);
+  font-size: 13px;
+  font-weight: 600;
+  transition: border-color .2s ease, background .2s ease;
+}
+
+.detail-feature-item:hover {
+  border-color: var(--red);
+  background: #fffafa;
+}
+
+.detail-feature-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #eaf8ef;
+  color: #168447;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+@media (max-width: 600px) {
+  .detail-features-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .detail-feature-item {
+    min-height: 42px;
+    font-size: 12px;
+  }
+}
+
 }

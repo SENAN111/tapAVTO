@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { AUTH_URL } from "../data/carData";
 
-function useAuth() {
+function useAuth({ notify = () => {} } = {}) {
   const [token, setToken] = useState(
     () => localStorage.getItem("token") || ""
   );
@@ -18,6 +18,7 @@ function useAuth() {
     password: "",
     role: "USER",
   });
+
   function openAuth(mode) {
     setAuthForm({
       firstName: "",
@@ -47,11 +48,13 @@ function useAuth() {
       setAuthLoading(true);
       setAuthError("");
 
+      const currentAuthMode = authMode;
+
       const endpoint =
-        authMode === "register" ? "/register" : "/login";
+        currentAuthMode === "register" ? "/register" : "/login";
 
       const payload =
-        authMode === "register"
+        currentAuthMode === "register"
           ? authForm
           : {
               email: authForm.email,
@@ -92,13 +95,15 @@ function useAuth() {
         role: "USER",
       });
 
-      alert(
-        authMode === "register"
-          ? "Qeydiyyat uğurla tamamlandı!"
-          : "Sistemə uğurla daxil oldunuz!"
+      notify(
+        currentAuthMode === "register"
+          ? "Qeydiyyat uğurla tamamlandı! Xoş gəlmisiniz."
+          : "Xoş gəlmisiniz! Hesabınıza uğurla daxil oldunuz.",
+        "success"
       );
     } catch (err) {
       setAuthError(err.message);
+      notify(err.message || "Giriş zamanı xəta baş verdi.", "error");
     } finally {
       setAuthLoading(false);
     }
@@ -107,7 +112,9 @@ function useAuth() {
   function logout() {
     localStorage.removeItem("token");
     setToken("");
-    alert("Hesabdan çıxış edildi.");
+    setAuthMode(null);
+
+    notify("Hesabınızdan uğurla çıxış etdiniz.", "success");
   }
 
   return {

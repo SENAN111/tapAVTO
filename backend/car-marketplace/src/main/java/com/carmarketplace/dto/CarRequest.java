@@ -6,6 +6,7 @@ import com.carmarketplace.entity.enums.FuelType;
 import com.carmarketplace.entity.enums.Transmission;
 import com.carmarketplace.entity.enums.SeatCount;
 import com.carmarketplace.entity.enums.Drivetrain;
+
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
@@ -15,10 +16,13 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -99,4 +103,8 @@ public class CarRequest {
             message = "Telefon nömrəsi düzgün deyil. Nümunə: +994501234567"
     )
     private String contactPhone;
+
+    // Avtomobilin təchizatları
+    @Size(max = 50, message = "Maksimum 50 təchizat seçilə bilər")
+    private List<@NotBlank String> features = new ArrayList<>();
 }

@@ -164,4 +164,5 @@ export const emptyCarForm = {
     color: "",
     description: "",
     contactPhone: "",
+    features: [],
 };

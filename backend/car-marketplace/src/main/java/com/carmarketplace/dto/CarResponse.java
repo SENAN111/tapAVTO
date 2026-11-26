@@ -7,11 +7,13 @@ import com.carmarketplace.entity.enums.FuelType;
 import com.carmarketplace.entity.enums.Transmission;
 import com.carmarketplace.entity.enums.SeatCount;
 import com.carmarketplace.entity.enums.Drivetrain;
+
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -44,6 +46,9 @@ public class CarResponse {
     private String ownerName;
     private String contactPhone;
     private String location;
+
+    // Avtomobilin təchizatları
+    private List<String> features = new ArrayList<>();
 
     private LocalDateTime createdAt;
 

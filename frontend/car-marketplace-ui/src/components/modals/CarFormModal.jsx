@@ -1,6 +1,21 @@
 
 import { cities } from "../../data/carData";
 
+const carFeatures = [
+    { value: "SUNROOF", label: "Lyuk" },
+    { value: "HEATED_SEATS", label: "Oturacaqların isidilməsi" },
+    { value: "HEATED_STEERING_WHEEL", label: "Sükanın isidilməsi" },
+    { value: "REAR_CAMERA", label: "Arxa görüntü kamerası" },
+    { value: "PARKING_SENSORS", label: "Park radarları" },
+    { value: "CRUISE_CONTROL", label: "Kruiz-kontrol" },
+    { value: "AIR_CONDITIONING", label: "Kondisioner" },
+    { value: "CLIMATE_CONTROL", label: "İqlim kontrolu" },
+    { value: "LEATHER_SEATS", label: "Dəri salon" },
+    { value: "PANORAMIC_ROOF", label: "Panoramik tavan" },
+    { value: "RAIN_SENSOR", label: "Yağış sensoru" },
+    { value: "LIGHT_SENSOR", label: "İşıq sensoru" },
+];
+
 function CarFormModal({
     showCarForm,
     closeCarForm,
@@ -21,6 +36,7 @@ function CarFormModal({
     handleModelChange,
     carForm,
     handleCarChange,
+    handleFeatureChange,
     bodyTypes = [],
     colorChoice,
     handleColorChange,
@@ -54,6 +70,9 @@ function CarFormModal({
     const safePhonePrefixes = Array.isArray(phonePrefixes) ? phonePrefixes : [];
     const safeSelectedFiles = Array.isArray(selectedFiles) ? selectedFiles : [];
     const safeCities = Array.isArray(cities) ? cities : [];
+    const selectedFeatures = Array.isArray(carForm?.features)
+        ? carForm.features
+        : [];
 
     const descriptionLength = (carForm?.description || "").length;
 
@@ -487,6 +506,49 @@ function CarFormModal({
                                 disabled={isEditRequestPending}
                             />
                             <small>{descriptionLength}/2000 simvol</small>
+                        </div>
+
+                        {/* Avtomobilin təchizatı */}
+                        <div className="listing-field full-width">
+                            <div className="car-features-heading">
+                                <label>Avtomobilin təchizatı</label>
+                                <small>
+                                    Avtomobildə mövcud olan təchizatları seçin.
+                                </small>
+                            </div>
+
+                            <div className="car-features-grid">
+                                {carFeatures.map((feature) => (
+                                    <label
+                                        key={feature.value}
+                                        className={`car-feature-option ${
+                                            selectedFeatures.includes(feature.value)
+                                                ? "selected"
+                                                : ""
+                                        }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedFeatures.includes(
+                                                feature.value
+                                            )}
+                                            onChange={(event) =>
+                                                handleFeatureChange?.(
+                                                    feature.value,
+                                                    event.target.checked
+                                                )
+                                            }
+                                            disabled={isEditRequestPending}
+                                        />
+
+                                        <span className="car-feature-check">
+                                            ✓
+                                        </span>
+
+                                        <span>{feature.label}</span>
+                                    </label>
+                                ))}
+                            </div>
                         </div>
 
                         <div className="listing-field full-width">

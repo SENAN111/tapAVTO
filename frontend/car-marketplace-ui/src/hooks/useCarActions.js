@@ -33,8 +33,10 @@ function useCarActions({
 
     closeCarForm,
     loadMyCars,
+    loadMyEditRequests,
     loadCars,
     navigate,
+    notify = () => {},
 }) {
     const files = Array.isArray(selectedFiles) ? selectedFiles : [];
 
@@ -46,7 +48,7 @@ function useCarActions({
         return data?.message || data?.error || fallback;
     }
 
-    // Seçilmiş faylları ardıcıl şəkildə redaktə sorğusuna yükləyir.
+    // Seçilmiş faylları redaktə sorğusuna ardıcıl yükləyir.
     async function uploadEditRequestImages(requestId, startIndex = 0) {
         for (let i = startIndex; i < files.length; i++) {
             const formData = new FormData();
@@ -74,24 +76,28 @@ function useCarActions({
                 );
             }
 
-            // Bu dəfə yalnız hazırkı seçilmiş faylların irəliləyişini sayırıq.
             setUploadedEditImageCount(i + 1);
         }
     }
 
-    async function finishEditRequest() {
-        alert(
-            "Dəyişiklik sorğunuz admin yoxlamasına göndərildi."
-        );
+    // Redaktə sorğusu tamamlandıqdan sonra bütün məlumatları yeniləyirik.
+   async function finishEditRequest() {
+       setPendingEditRequestId(null);
+       setUploadedEditImageCount(0);
 
-        setPendingEditRequestId(null);
-        setUploadedEditImageCount(0);
+       closeCarForm();
 
-        closeCarForm();
+       await Promise.all([
+           loadMyCars(token),
+           loadMyEditRequests(token),
+           loadCars(),
+       ]);
 
-        await loadMyCars(token);
-        await loadCars();
-    }
+       notify(
+           "Dəyişiklik sorğunuz uğurla administratora göndərildi. Yoxlama tamamlandıqdan sonra sizə məlumat veriləcək.",
+           "success"
+       );
+   }
 
     function validateCarForm() {
         if (phoneNumber.length !== 7) {
@@ -200,6 +206,9 @@ function useCarActions({
             engineVolume,
             location,
             contactPhone: `${phonePrefix}${phoneNumber}`,
+            features: Array.isArray(carForm.features)
+                ? carForm.features
+                : [],
         };
     }
 
@@ -214,7 +223,7 @@ function useCarActions({
                 Boolean(editingCarId) &&
                 ["APPROVED", "PUBLISHED"].includes(editingCarStatus);
 
-            // Mövcud sorğu varsa, yenisini yaratmadan yükləməni davam etdiririk.
+            // Mövcud redaktə sorğusuna şəkil yükləməsini davam etdiririk.
             if (requiresAdminReview && pendingEditRequestId) {
                 await uploadEditRequestImages(
                     pendingEditRequestId,
@@ -296,7 +305,10 @@ function useCarActions({
             }
 
             if (editingCarId) {
-                alert("Elan uğurla yeniləndi.");
+                notify(
+                    "Elanınız uğurla yeniləndi.",
+                    "success"
+                );
 
                 closeCarForm();
 
@@ -317,6 +329,7 @@ function useCarActions({
             setUploadedImageCount(0);
         } catch (err) {
             setCarFormError(err.message);
+            notify(err.message, "error");
         } finally {
             setCarFormLoading(false);
         }
@@ -369,12 +382,15 @@ function useCarActions({
                 navigate("/my-cars");
             }
 
-            alert("Elan uğurla silindi.");
+            notify(
+                "Elanınız uğurla silindi.",
+                "success"
+            );
 
             await loadMyCars(token);
             await loadCars();
         } catch (err) {
-            alert(err.message);
+            notify(err.message, "error");
         }
     }
 
@@ -391,7 +407,6 @@ function useCarActions({
             Boolean(editingCarId) &&
             ["APPROVED", "PUBLISHED"].includes(editingCarStatus);
 
-        // Mövcud elan şəkilləri və serverdəki əvvəlki sorğu şəkilləri nəzərə alınır.
         const maxAllowed = isEditRequest
             ? Math.max(
                   0,
@@ -491,6 +506,7 @@ function useCarActions({
             setImageError(
                 `${err.message} Yüklənmiş şəkillər saxlanılıb. Yenidən cəhd edə bilərsiniz.`
             );
+            notify(err.message, "error");
         } finally {
             setUploading(false);
         }
@@ -531,7 +547,10 @@ function useCarActions({
                 );
             }
 
-            alert("Elan uğurla yayımlandı!");
+            notify(
+                "Elanınız uğurla yoxlanışa göndərildi!",
+                "success"
+            );
 
             closeCarForm();
 
@@ -539,6 +558,7 @@ function useCarActions({
             await loadCars();
         } catch (err) {
             setImageError(err.message);
+            notify(err.message, "error");
         } finally {
             setPublishing(false);
         }

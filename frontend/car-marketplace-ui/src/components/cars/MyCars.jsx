@@ -5,6 +5,8 @@ function MyCars({
     goHome,
     error,
     myCars,
+    myEditRequests = [],
+    editRequestsLoading = false,
     openCarForm,
     carImages,
     openEditForm,
@@ -43,9 +45,7 @@ function MyCars({
 
                 <div className="my-cars-header">
                     <p className="eyebrow">ŞƏXSİ KABİNET</p>
-
                     <h1>Elanlarım</h1>
-
                     <p>
                         Yerləşdirdiyiniz avtomobil elanlarını buradan
                         idarə edə bilərsiniz.
@@ -122,16 +122,25 @@ function MyCars({
                     </div>
                 ) : (
                     <div className="my-cars-grid">
-                        {myCars.map((car) => (
-                            <MyCarCard
-                                key={car.id}
-                                car={car}
-                                carImages={carImages}
-                                openEditForm={openEditForm}
-                                openCarDetails={openCarDetails}
-                                handleDeleteCar={handleDeleteCar}
-                            />
-                        ))}
+                        {myCars.map((car) => {
+                            const carEditRequests = myEditRequests.filter(
+                                (request) =>
+                                    String(request.carId) === String(car.id)
+                            );
+
+                            return (
+                                <MyCarCard
+                                    key={car.id}
+                                    car={car}
+                                    carImages={carImages}
+                                    editRequests={carEditRequests}
+                                    editRequestsLoading={editRequestsLoading}
+                                    openEditForm={openEditForm}
+                                    openCarDetails={openCarDetails}
+                                    handleDeleteCar={handleDeleteCar}
+                                />
+                            );
+                        })}
                     </div>
                 )}
 
